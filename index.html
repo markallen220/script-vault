@@ -1,0 +1,1278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover,maximum-scale=1.0,user-scalable=no"/>
+<meta name="theme-color" content="#0B0D11"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Vault"/>
+<title>ALLEN OS · VAULT</title>
+<style>
+:root{
+  --bg:#0B0D11; --surface:#11151b; --surface2:#0d1014; --well:#080a0e;
+  --accent:#60a5fa; --accent-strong:#3b82f6;
+  --line:rgba(96,165,250,0.30); --line-soft:rgba(96,165,250,0.12);
+  --green:#22C55E; --red:#EF4444; --amber:#F59E0B; --emerald:#34d399; --purple:#a78bfa; --gray:#94a3b8;
+  --text:#f8fafc; --text2:#b8c2d1; --muted:#94a3b8;
+  --radius:5px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;}
+body{
+  background:var(--bg); color:var(--text);
+  font-family:-apple-system,"SF Pro Text","Segoe UI",Roboto,system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased; line-height:1.5; overscroll-behavior:none;
+}
+.mono{font-family:ui-monospace,"SF Mono",Menlo,Monaco,Consolas,monospace;}
+.eyebrow{
+  font-family:ui-monospace,"SF Mono",Menlo,monospace; text-transform:uppercase;
+  letter-spacing:0.3em; font-size:10px; color:var(--muted);
+}
+button{font-family:inherit;color:inherit;background:none;border:0;cursor:pointer;}
+input,textarea,select{font-family:inherit;color:var(--text);background:var(--well);border:1px solid var(--line-soft);border-radius:var(--radius);}
+
+/* ---------- shell ---------- */
+#app{display:flex;flex-direction:column;min-height:100dvh;}
+header.topbar{
+  position:sticky;top:0;z-index:30;
+  padding:calc(env(safe-area-inset-top) + 14px) 18px 12px;
+  background:linear-gradient(180deg,rgba(11,13,17,0.96),rgba(11,13,17,0.82));
+  backdrop-filter:blur(12px); border-bottom:1px solid var(--line-soft);
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+}
+.wordmark{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-weight:600;letter-spacing:0.12em;font-size:15px;}
+.wordmark b{color:var(--accent);text-shadow:0 0 10px rgba(96,165,250,0.5);font-weight:600;}
+.tagline{font-size:9px;letter-spacing:0.3em;}
+.iconbtn{
+  width:38px;height:38px;border:1px solid var(--line-soft);border-radius:var(--radius);
+  display:flex;align-items:center;justify-content:center;color:var(--text2);
+  background:var(--surface);
+}
+.iconbtn svg{width:18px;height:18px;}
+
+main{flex:1;padding:16px 14px 96px;}
+.screen{display:none;animation:fade .25s ease;}
+.screen.active{display:block;}
+@keyframes fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+
+.section-label{margin:6px 2px 12px;display:flex;align-items:center;gap:8px;}
+.section-label .line{flex:1;height:1px;background:var(--line-soft);}
+
+/* ---------- chips ---------- */
+.chips{display:flex;gap:8px;overflow-x:auto;padding:2px 0 14px;scrollbar-width:none;}
+.chips::-webkit-scrollbar{display:none;}
+.chip{
+  flex:0 0 auto;padding:7px 13px;border-radius:99px;border:1px solid var(--line-soft);
+  background:var(--surface);font-size:12px;color:var(--text2);white-space:nowrap;
+  font-family:ui-monospace,"SF Mono",Menlo,monospace;letter-spacing:0.02em;
+}
+.chip.on{border-color:var(--line);color:var(--text);background:linear-gradient(135deg,rgba(96,165,250,0.14),var(--surface) 60%);box-shadow:0 0 14px rgba(96,165,250,0.12);}
+
+/* ---------- card ---------- */
+.card{
+  background:linear-gradient(135deg,rgba(96,165,250,0.06),var(--surface) 55%);
+  border:1px solid var(--line-soft);border-radius:var(--radius);
+  padding:15px 15px 13px;margin-bottom:12px;
+}
+.card .top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:9px;}
+.card h3{font-size:15px;font-weight:600;letter-spacing:-0.01em;line-height:1.3;}
+.badges{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:11px;}
+.badge{
+  font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:9px;letter-spacing:0.08em;
+  text-transform:uppercase;padding:3px 8px;border-radius:99px;border:1px solid currentColor;
+  opacity:.9;
+}
+.b-cat{color:var(--accent);} .b-obj{color:var(--red);} .b-close{color:var(--green);}
+.b-tone{color:var(--text2);} .b-lead{color:var(--amber);} .b-vm{color:var(--purple);}
+.whenuse{font-size:12px;color:var(--muted);margin-bottom:11px;font-style:italic;}
+.scripttext{
+  font-size:14.5px;line-height:1.62;color:var(--text);white-space:pre-wrap;
+  border-left:2px solid var(--line);padding-left:12px;margin-bottom:13px;
+}
+.scripttext .stage{color:var(--muted);font-size:13px;}
+.principle{font-size:11px;color:var(--muted);margin-bottom:12px;}
+.principle b{color:var(--text2);font-weight:600;}
+
+.actions{display:flex;gap:8px;flex-wrap:wrap;}
+.act{
+  display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);
+  padding:8px 12px;border:1px solid var(--line-soft);border-radius:var(--radius);background:var(--surface2);
+  font-family:ui-monospace,"SF Mono",Menlo,monospace;letter-spacing:0.04em;
+}
+.act svg{width:14px;height:14px;}
+.act.primary{color:var(--accent);border-color:var(--line);}
+.act.rec{color:var(--red);border-color:rgba(239,68,68,0.4);}
+.act.rec.recording{background:rgba(239,68,68,0.14);animation:pulse 1.1s infinite;}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0.4);}50%{box-shadow:0 0 0 6px rgba(239,68,68,0);}}
+.act.on{color:var(--green);border-color:rgba(34,197,94,0.4);}
+
+.takes{margin-top:11px;border-top:1px solid var(--line-soft);padding-top:10px;display:none;}
+.takes.show{display:block;}
+.take{display:flex;align-items:center;gap:10px;padding:7px 0;font-size:12px;color:var(--text2);}
+.take .when{flex:1;font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:11px;color:var(--muted);}
+.take button{color:var(--accent);font-size:12px;}
+.take .del{color:var(--muted);}
+
+/* ---------- flow ---------- */
+.flowstage{margin-bottom:8px;}
+.flowstage .head{display:flex;align-items:center;gap:9px;margin:18px 2px 10px;}
+.flowstage .num{
+  width:24px;height:24px;border-radius:99px;border:1px solid var(--line);color:var(--accent);
+  display:flex;align-items:center;justify-content:center;font-size:11px;
+  font-family:ui-monospace,"SF Mono",Menlo,monospace;
+}
+.flowstage .head h4{font-size:13px;letter-spacing:0.04em;text-transform:uppercase;font-family:ui-monospace,"SF Mono",Menlo,monospace;color:var(--text2);}
+
+/* ---------- drill hub ---------- */
+.tile{
+  display:flex;align-items:center;gap:14px;width:100%;text-align:left;
+  background:linear-gradient(135deg,rgba(96,165,250,0.07),var(--surface) 58%);
+  border:1px solid var(--line-soft);border-radius:var(--radius);padding:16px;margin-bottom:11px;
+}
+.tile .ico{width:42px;height:42px;border:1px solid var(--line);border-radius:var(--radius);display:flex;align-items:center;justify-content:center;color:var(--accent);flex:0 0 auto;}
+.tile .ico svg{width:20px;height:20px;}
+.tile h4{font-size:15px;font-weight:600;margin-bottom:3px;}
+.tile p{font-size:12px;color:var(--muted);line-height:1.45;}
+.tile .arrow{margin-left:auto;color:var(--muted);}
+
+.statrow{display:flex;gap:10px;margin-bottom:16px;}
+.stat{flex:1;background:var(--surface);border:1px solid var(--line-soft);border-radius:var(--radius);padding:13px;text-align:center;}
+.stat .n{font-size:24px;font-weight:700;letter-spacing:-0.02em;}
+.stat .n.accent{color:var(--accent);}
+.stat .l{font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);margin-top:3px;font-family:ui-monospace,"SF Mono",Menlo,monospace;}
+
+/* ---------- empty / hint ---------- */
+.empty{text-align:center;color:var(--muted);font-size:13px;padding:40px 20px;line-height:1.6;}
+.empty svg{width:34px;height:34px;opacity:.4;margin-bottom:12px;}
+
+/* ---------- search ---------- */
+.searchbar{position:relative;margin-bottom:16px;}
+.searchbar input{width:100%;padding:13px 14px 13px 40px;font-size:15px;border:1px solid var(--line-soft);}
+.searchbar svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);width:17px;height:17px;color:var(--muted);}
+
+/* ---------- bottom nav ---------- */
+nav.tabbar{
+  position:fixed;left:0;right:0;bottom:0;z-index:40;
+  display:flex;justify-content:space-around;
+  padding:8px 6px calc(env(safe-area-inset-bottom) + 8px);
+  background:linear-gradient(0deg,rgba(11,13,17,0.98),rgba(11,13,17,0.88));
+  backdrop-filter:blur(14px);border-top:1px solid var(--line-soft);
+}
+.tab{display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--muted);flex:1;padding:4px 0;}
+.tab svg{width:21px;height:21px;}
+.tab span{font-size:9px;letter-spacing:0.08em;text-transform:uppercase;font-family:ui-monospace,"SF Mono",Menlo,monospace;}
+.tab.on{color:var(--accent);}
+.tab.on svg{filter:drop-shadow(0 0 6px rgba(96,165,250,0.55));}
+
+/* ---------- overlay (fade / ambush / form) ---------- */
+.overlay{
+  position:fixed;inset:0;z-index:60;background:rgba(5,7,10,0.92);backdrop-filter:blur(6px);
+  display:none;flex-direction:column;padding:calc(env(safe-area-inset-top) + 14px) 18px calc(env(safe-area-inset-bottom) + 18px);
+}
+.overlay.show{display:flex;}
+.ov-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.ov-head .eyebrow{color:var(--accent);}
+.ov-close{width:34px;height:34px;border:1px solid var(--line-soft);border-radius:var(--radius);color:var(--text2);font-size:18px;display:flex;align-items:center;justify-content:center;}
+.ov-body{flex:1;overflow-y:auto;}
+.ov-title{font-size:19px;font-weight:600;letter-spacing:-0.01em;margin-bottom:16px;}
+.fadeword{transition:color .15s;}
+.fadeword.hidden{color:transparent;border-bottom:1px solid var(--line-soft);}
+.fadetext{font-size:18px;line-height:1.9;white-space:pre-wrap;margin-bottom:20px;}
+.slider-wrap{margin:14px 0 20px;}
+.slider-wrap label{font-size:11px;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;font-family:ui-monospace,"SF Mono",Menlo,monospace;display:block;margin-bottom:8px;}
+input[type=range]{width:100%;accent-color:var(--accent);}
+.bigbtn{width:100%;padding:15px;border-radius:var(--radius);font-size:14px;font-weight:600;letter-spacing:0.04em;border:1px solid var(--line);color:var(--accent);background:linear-gradient(135deg,rgba(96,165,250,0.12),var(--surface) 60%);font-family:ui-monospace,"SF Mono",Menlo,monospace;text-transform:uppercase;margin-top:8px;}
+.bigbtn.solid{background:var(--accent);color:#06121f;border-color:var(--accent);}
+.bigbtn.ghost{color:var(--text2);border-color:var(--line-soft);background:var(--surface);}
+
+.ambush-prompt{background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:var(--radius);padding:18px;margin-bottom:18px;}
+.ambush-prompt .who{font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:var(--red);font-family:ui-monospace,"SF Mono",Menlo,monospace;margin-bottom:8px;}
+.ambush-prompt .said{font-size:20px;font-weight:600;line-height:1.4;}
+.reveal{display:none;}
+.reveal.show{display:block;animation:fade .3s ease;}
+
+/* score */
+.scorerow{margin-bottom:18px;}
+.scorerow .lab{display:flex;justify-content:space-between;font-size:12px;color:var(--text2);margin-bottom:7px;}
+.scorerow .val{color:var(--accent);font-family:ui-monospace,"SF Mono",Menlo,monospace;}
+
+/* form */
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;font-family:ui-monospace,"SF Mono",Menlo,monospace;}
+.field input,.field textarea,.field select{width:100%;padding:11px 12px;font-size:14px;}
+.field textarea{min-height:120px;resize:vertical;line-height:1.5;}
+
+/* toast */
+#toast{
+  position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 84px);transform:translateX(-50%) translateY(20px);
+  background:var(--surface);border:1px solid var(--line);border-radius:99px;padding:10px 18px;
+  font-size:13px;color:var(--text);z-index:80;opacity:0;transition:.25s;pointer-events:none;
+  box-shadow:0 0 20px rgba(96,165,250,0.18);
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+.foot{text-align:center;padding:26px 0 8px;}
+.foot .nm{font-family:"Snell Roundhand","Apple Chancery",cursive;font-size:20px;color:var(--text2);}
+.foot .meta{font-size:9px;letter-spacing:0.25em;text-transform:uppercase;color:var(--muted);margin-top:4px;font-family:ui-monospace,"SF Mono",Menlo,monospace;}
+
+/* ===== mastery scoring (#5) ===== */
+.mastery{display:flex;align-items:center;gap:6px;margin:2px 0 4px;flex-wrap:wrap;}
+.mastery .mlabel{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:9px;letter-spacing:.22em;color:var(--muted);margin-right:4px;}
+.dot{width:14px;height:14px;border-radius:99px;border:1px solid var(--line);display:inline-block;cursor:pointer;transition:all .15s;background:transparent;flex:0 0 auto;}
+.dot.on{background:var(--accent);border-color:var(--accent);box-shadow:0 0 7px rgba(96,165,250,.5);}
+.dot.big{width:34px;height:34px;}
+.rate-block{margin-top:16px;}
+.rate-label{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+.rate-dots{display:flex;gap:11px;}
+/* ===== objection quick-pull FAB (#2) ===== */
+#objFab{position:fixed;right:14px;bottom:calc(76px + env(safe-area-inset-bottom));z-index:45;display:inline-flex;align-items:center;gap:7px;padding:11px 16px;border-radius:99px;background:linear-gradient(135deg,rgba(239,68,68,.20),var(--surface) 72%);border:1px solid rgba(239,68,68,.45);color:#fca5a5;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.45),0 0 16px rgba(239,68,68,.18);}
+#objFab:active{transform:scale(.96);}
+#objFab svg{width:17px;height:17px;}
+#objFab span{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:11px;letter-spacing:.12em;}
+.overlay.show ~ #objFab{display:none;}
+
+/* ===== pacing / teleprompter (#1) ===== */
+.pace-ctrl{display:flex;justify-content:center;margin:2px 0 14px;}
+.pace-speeds{display:inline-flex;gap:5px;background:var(--surface);border:1px solid var(--line-soft);border-radius:99px;padding:4px;}
+.pchip{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:11px;letter-spacing:.07em;padding:7px 15px;border-radius:99px;border:none;background:transparent;color:var(--muted);cursor:pointer;transition:all .15s;}
+.pchip.on{background:var(--accent);color:#06121f;font-weight:700;}
+.pace-stage{position:relative;height:46vh;min-height:270px;overflow:hidden;border:1px solid var(--line-soft);border-radius:var(--radius);background:linear-gradient(180deg,var(--surface2),var(--well));-webkit-mask-image:linear-gradient(180deg,transparent,#000 22%,#000 78%,transparent);mask-image:linear-gradient(180deg,transparent,#000 22%,#000 78%,transparent);}
+.pace-track{position:absolute;left:0;right:0;top:50%;padding:0 20px;will-change:transform;transition:transform .42s cubic-bezier(.4,0,.2,1);}
+.pl{font-size:16px;line-height:1.5;color:var(--muted);opacity:.32;padding:9px 0;transition:opacity .3s,color .3s,font-size .3s;cursor:pointer;}
+.pl.past{opacity:.15;}
+.pl.cue{font-style:italic;font-size:13px;color:var(--text2);}
+.pl.blank{padding:3px 0;}
+.pl.active{opacity:1;color:var(--text);font-size:20px;font-weight:600;text-shadow:0 0 22px rgba(96,165,250,.22);}
+.pl.active.cue{font-weight:400;color:var(--muted);font-size:15px;}
+.holdpill{display:none;margin-left:10px;font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:10px;letter-spacing:.1em;color:var(--accent);border:1px solid var(--accent);border-radius:99px;padding:3px 9px;vertical-align:middle;white-space:nowrap;}
+.pl.holding .holdpill{display:inline-block;animation:holdpulse 1s ease-in-out infinite;}
+@keyframes holdpulse{0%,100%{opacity:.45;}50%{opacity:1;box-shadow:0 0 12px rgba(96,165,250,.5);}}
+.pace-buttons{display:flex;gap:9px;margin-top:16px;flex-wrap:wrap;}
+.pace-buttons .bigbtn{flex:1;min-width:104px;margin-top:0;}
+.pace-finish{margin-top:18px;text-align:center;}
+.pace-finish .rate-dots{justify-content:center;}
+
+/* ===== Live Call Mode (#1) ===== */
+.act.live{color:var(--accent);border-color:var(--line);}
+.lc-tag{display:inline-block;font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);border:1px solid var(--line-soft);border-radius:99px;padding:4px 10px;margin-bottom:14px;}
+.lc-sub{font-size:13px;color:var(--muted);margin-bottom:12px;}
+.lc-checklist{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;}
+.lc-check{display:flex;align-items:center;gap:11px;text-align:left;background:var(--surface);border:1px solid var(--line-soft);border-radius:var(--radius);padding:12px 13px;color:var(--text2);font-size:14px;cursor:pointer;line-height:1.4;}
+.lc-check .box{width:18px;height:18px;flex:0 0 auto;border-radius:5px;border:1.5px solid var(--line);position:relative;transition:all .15s;}
+.lc-check.armed{border-color:var(--accent);color:var(--text);}
+.lc-check.armed .box{background:var(--accent);border-color:var(--accent);}
+.lc-check.armed .box:after{content:"";position:absolute;left:5px;top:1px;width:5px;height:10px;border:solid #06121f;border-width:0 2px 2px 0;transform:rotate(45deg);}
+.lc-goal{font-size:13px;color:var(--muted);background:var(--well);border:1px solid var(--line-soft);border-radius:var(--radius);padding:12px 14px;margin-bottom:16px;white-space:pre-wrap;line-height:1.5;}
+.lc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.lc-count{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:11px;letter-spacing:.2em;color:var(--accent);}
+.lc-restart{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);background:transparent;border:1px solid var(--line-soft);border-radius:99px;padding:5px 11px;cursor:pointer;}
+.lc-name{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:14px;letter-spacing:.05em;color:var(--accent);font-weight:700;margin-bottom:14px;text-transform:uppercase;}
+.lc-body{font-size:20px;line-height:1.55;color:var(--text);white-space:pre-wrap;min-height:28vh;}
+.lc-body .stage{display:block;font-size:14px;color:var(--muted);font-style:italic;opacity:.85;margin:5px 0;}
+.lc-bar{display:flex;gap:8px;margin-top:22px;position:sticky;bottom:0;background:linear-gradient(180deg,transparent,var(--bg) 32%);padding:12px 0 4px;}
+.lc-btn{flex:1;padding:15px 8px;border-radius:var(--radius);font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:13px;font-weight:600;letter-spacing:.03em;border:1px solid var(--line-soft);background:var(--surface);color:var(--text2);cursor:pointer;}
+.lc-btn:disabled{opacity:.35;}
+.lc-btn.obj{color:#fca5a5;border-color:rgba(239,68,68,.4);background:linear-gradient(135deg,rgba(239,68,68,.14),var(--surface) 70%);flex:1.25;}
+.lc-btn.next{background:var(--accent);color:#06121f;border-color:var(--accent);}
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <div>
+      <div class="wordmark">ALLEN OS <b>· VAULT</b></div>
+      <div class="tagline eyebrow">REVERSE SELLING SCRIPT SYSTEM</div>
+    </div>
+    <button class="iconbtn" id="addBtn" aria-label="Add script">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </button>
+  </header>
+
+  <main>
+    <!-- BROWSE -->
+    <section class="screen active" id="s-browse">
+      <div class="chips" id="catChips"></div>
+      <div id="browseList"></div>
+      <div class="foot"><div class="nm">Mark Allen</div><div class="meta">CA DRE# 01933129 · Founder &amp; Chief Operator</div></div>
+    </section>
+
+    <!-- FLOW -->
+    <section class="screen" id="s-flow">
+      <div class="section-label"><span class="eyebrow">Run the call · top to bottom</span><span class="line"></span></div>
+      <div id="flowList"></div>
+    </section>
+
+    <!-- DRILL -->
+    <section class="screen" id="s-drill">
+      <div class="section-label"><span class="eyebrow">Training</span><span class="line"></span></div>
+      <div class="statrow">
+        <div class="stat"><div class="n accent" id="stStreak">0</div><div class="l">Day Streak</div></div>
+        <div class="stat"><div class="n accent" id="stReps">0%</div><div class="l">Mastery</div></div>
+        <div class="stat"><div class="n" id="stWeak">0</div><div class="l">To Drill</div></div>
+      </div>
+      <button class="tile" data-mode="queue">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+        <div><h4>Smart Drill Queue</h4><p>Today's list — your weakest and stalest scripts first.</p></div>
+        <div class="arrow">›</div>
+      </button>
+      <button class="tile" data-mode="fade-pick">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h10M4 18h6"/></svg></div>
+        <div><h4>Memorization Fade</h4><p>Read it, then hide the words pass by pass until you say it cold.</p></div>
+        <div class="arrow">›</div>
+      </button>
+      <button class="tile" data-mode="ambush">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z"/></svg></div>
+        <div><h4>Objection Ambush</h4><p>A random objection fires. Answer out loud before you reveal the line.</p></div>
+        <div class="arrow">›</div>
+      </button>
+      <button class="tile" data-mode="takes">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M8 7v10M16 7v10M4 11v2M20 11v2"/></svg></div>
+        <div><h4>My Takes</h4><p>Every recording you've made, grouped by script.</p></div>
+        <div class="arrow">›</div>
+      </button>
+    </section>
+
+    <!-- OBJECTIONS -->
+    <section class="screen" id="s-obj">
+      <div class="section-label"><span class="eyebrow">Mid-call · fast access</span><span class="line"></span></div>
+      <div id="objList"></div>
+    </section>
+
+    <!-- SEARCH -->
+    <section class="screen" id="s-search">
+      <div class="searchbar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input id="searchInput" placeholder="Search every script…" autocomplete="off" autocorrect="off"/>
+      </div>
+      <div id="searchList"></div>
+    </section>
+  </main>
+
+  <nav class="tabbar">
+    <button class="tab on" data-screen="browse"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg><span>Browse</span></button>
+    <button class="tab" data-screen="flow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg><span>Flow</span></button>
+    <button class="tab" data-screen="drill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="0.5" fill="currentColor"/></svg><span>Drill</span></button>
+    <button class="tab" data-screen="obj"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z"/></svg><span>Objections</span></button>
+    <button class="tab" data-screen="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><span>Search</span></button>
+  </nav>
+</div>
+
+<!-- OVERLAY -->
+<div class="overlay" id="overlay">
+  <div class="ov-head"><span class="eyebrow" id="ovKicker">DRILL</span><button class="ov-close" id="ovClose">×</button></div>
+  <div class="ov-body" id="ovBody"></div>
+</div>
+
+<!-- OBJECTION QUICK-PULL (#2) -->
+<button id="objFab" aria-label="Objection quick-pull">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z"/></svg>
+  <span>OBJECTION</span>
+</button>
+
+<div id="toast"></div>
+
+<script>
+/* ============================================================
+   ALLEN OS · VAULT  — single-file vanilla app
+   Storage: localStorage (scripts, scores, streak) + IndexedDB (audio takes)
+   ============================================================ */
+
+/* ---------- seed scripts (your real reverse-selling lines) ---------- */
+const SEED = [
+
+/* ============ LEAD-SOURCE CALL FLOWS (Mark's cards) ============ */
+{ id:'flow-expired', title:'Expired - Call Flow', category:'Call Flow', callStage:'Opening', leadType:'Expired', objection:'', tone:'Calm', needsPractice:true,
+  whenToUse:'First call to an expired listing. Less talking, more questions - let silence work.', principle:'Curious, calm, zero pressure. Book the listing consult.',
+  text:`GOAL: Book the listing consult. (Backup: qualified lead + permission to follow up.)
+
+1 - PATTERN INTERRUPT
+"Hi, is this John? ... John, this is Mark. Look, I'll be upfront -- I'm a Realtor, and before you hang up, I was hoping to ask you something real quick. Would that be okay?"
+[Pause. You just handed him control -- that's what disarms him.]
+
+2 - ASSUMPTIVE HOOK
+"I appreciate that. I was calling about the home on [street] -- saw it came off the market. I'm assuming that's because you already sold it, right?"
+[He'll usually correct you: "No, it didn't sell."]
+
+3 - ABC QUESTION
+"Interesting. Is that because you didn't get any offers, the offers came in too low, or was it something else?"
+[Let him talk. Do not fill the silence.]
+
+4 - EMOTIONAL DIG
+"And when your agent let you know it was coming off the market, what'd they say was the reason it didn't sell?"
+[Listen for frustration, blame, confusion -- that's your motivation signal.]
+
+5 - DISCOVERY (ask, never pitch)
+"When you first decided to sell -- where were you hoping to head to?" (motivation)
+"And how soon did you need to be there?" (timeline)
+"What do you think kept it from selling?" (their theory)
+"If you could wave a wand and have this handled -- what's that look like?" (desired outcome)
+
+6 - RELATIONSHIP CHECK
+"Can I ask you something -- and I don't want to step on any toes -- are you planning to relist with the same agent, or are you weighing your options?"
+
+7 - APPOINTMENT CLOSE (autonomy > future-pace > because)
+"Look, I'll be upfront -- I don't know if I'm the right agent for you; you'll decide that. But let's pretend we met, and after you saw my plan you genuinely believed I could sell your home and get you to [their outcome]... would there be any reason you wouldn't at least want to explore it?"
+[Pause -- the second he speaks, cut in gently:]
+"Because -- let's face it, you're not gonna do anything unless it makes sense, right?"
+Then lock the time: "Great -- does [day] at [time] work, or would [alt] be better?"` },
+
+{ id:'flow-fsbo', title:'FSBO - Call Flow', category:'Call Flow', callStage:'Opening', leadType:'FSBO', objection:'', tone:'Curious', needsPractice:true,
+  whenToUse:'For-sale-by-owner. Relationship before presentation.', principle:'Curious, low-pressure, genuinely helpful.',
+  text:`GOAL: Book the listing consult. (Backup: qualified lead + permission to follow up.)
+
+1 - PATTERN INTERRUPT
+"Hi, is this John? ... John, this is Mark. Listen, you're gonna hate me -- I'm a Realtor. Do you want to hang up, or give me 30 seconds and then decide?"
+[Pause. You handed him the exit -- that's what keeps him on the line.]
+
+2 - REVERSE PRESUMPTIVE
+"I appreciate that. Look -- I see you're selling on your own, which I respect. It's priced really well... so I get the feeling you already have multiple offers, or it's already sold. Fair?"
+[He'll correct you -- that's him opening up on his own.]
+
+3 - ABC QUESTION
+"Interesting. Is that because you didn't get any offers, the offers came in too low, or was it something else?"
+[Let him talk. Do not fill the silence.]
+
+4 - BUYER-INTRO OPENER
+"I only ask because homes like yours often move fast. Not that I have one right now -- but if I came across a buyer interested in your home, would you be upset if I introduced them?"
+[Easy yes -- cracks the door to a conversation.]
+
+5 - DISCOVERY (ask, never pitch)
+"What are you hoping for that you don't already have -- could you just stay and not sell?" (motivation)
+"How long are you planning to try on your own before you'd consider other options?" (timeline)
+"If 30 days go by and you don't get the offer you want -- what would you do at that point?" (future consequence)
+"If you got an offer right away with the price and terms you wanted -- a problem, or do you already have your next place lined up?" (readiness)
+
+6 - PERMISSION TO CLOSE
+"Can I ask you one last question before I let you go?"
+
+7 - APPOINTMENT CLOSE (autonomy > future-pace > because)
+"Let's pretend we met, and after you saw my plan you genuinely believed I could sell your home and help you net the money you need / get to your next place -- would there be any reason you wouldn't invite me over just to explore it a bit more..."
+[Pause -- the second he speaks, cut in:]
+"Because -- let's face it, you're not gonna do anything unless it makes sense, right?"
+Close the day: "What day makes sense for us to get together?" Then: "Would it help if I emailed my resume -- or would you just delete it?"` },
+
+{ id:'flow-frbo', title:'FRBO - Call Flow', category:'Call Flow', callStage:'Opening', leadType:'FRBO', objection:'', tone:'Curious', needsPractice:true,
+  whenToUse:'For-rent-by-owner. The rental headache is your opening.', principle:'Curious, conversational, zero pressure.',
+  text:`GOAL: Book the listing consult OR a property value-analysis call.
+
+1 - PATTERN INTERRUPT
+"Hi, is this John? ... John, this is Mark. I'm a Realtor, and before you hang up, I was hoping to ask a quick question about the home you've got for rent -- would that be okay?"
+[You led with his rental, not a pitch. Pause.]
+
+2 - REVERSE PRESUMPTIVE
+"I appreciate that. And if I asked whether you'd ever consider selling it -- it probably wouldn't matter what you could get in this market. You're gonna hang onto it forever, right?"
+[The takeaway disarms him; he'll often soften.]
+
+3 - TENANT CLASSIFICATION
+"Makes sense. And I'm curious -- is there a tenant in there now, or have they already moved out?"
+[Occupied vs. vacant changes the whole conversation.]
+
+4 - SURFACE THE PAIN
+"A lot of landlords tell me it's a headache -- tenants, repairs, the managing -- and they'd sell if it made sense. But I get the feeling you haven't had any issues like that, right?"
+[The takeaway invites him to vent the real frustration.]
+
+5 - DISCOVERY (ask, never pitch)
+"What's the property been costing you versus what it brings in?" (cash flow)
+"If you could pull the equity out today -- what would you do with it?" (motivation)
+"What would need to happen for selling to make sense?" (conditions)
+"How long have you owned it -- and what's kept you holding?" (timeline / obstacle)
+
+6 - FUTURE OFFER
+"Not that I have a buyer right now -- but if you decided to sell and got a great offer right away, would that cause any problems for you?"
+
+7 - APPOINTMENT CLOSE (permission > future-pace > because)
+"Before I let you go, can I make a quick recommendation? Let's pretend I did a full value analysis, the numbers made sense, and you genuinely believed selling now was a viable option -- any reason you wouldn't want to explore that a bit more..."
+[Pause -- the second he speaks:]
+"Because -- let's face it, you're not gonna do anything unless it makes sense, right?"
+Then close the day.` },
+
+{ id:'flow-absentee', title:'Absentee Owner - Call Flow', category:'Call Flow', callStage:'Opening', leadType:'Absentee', objection:'', tone:'Curious', needsPractice:true,
+  whenToUse:'Absentee / out-of-area owner. Let him surface his own pain.', principle:'Curious, conversational, zero pressure.',
+  text:`GOAL: Book the listing consult OR a property value-analysis call.
+
+1 - PATTERN INTERRUPT
+"Hi, is this John? ... John, this is Mark. Look, I'll be upfront -- I'm a Realtor. Do you want to hang up, or would it be okay if I asked you something real quick?"
+[Pause -- hand him control.]
+
+2 - REVERSE PRESUMPTIVE
+"I was calling about the property on [street]. And if I asked whether you'd ever consider selling -- it probably wouldn't matter what you could get in this market. You're gonna hang onto it forever, right?"
+[He'll often say "well... maybe if the price was right."]
+
+3 - PROPERTY CLASSIFICATION
+"Makes sense. And I'm curious -- is that a rental, a second home, or something else?"
+
+4 - SURFACE THE PAIN
+"A lot of owners tell me being a landlord is a headache -- tenants, repairs -- and they'd sell if it made sense. But I get the feeling you haven't had any issues like that, right?"
+
+5 - DISCOVERY (ask, never pitch)
+"What's been the biggest challenge with the property recently?" (pain)
+"If you could walk away with the equity today -- what would you do with it?" (motivation)
+"What would need to happen for selling to make sense for you?" (conditions)
+"How long have you been thinking about this -- and what's holding you back?" (timeline / obstacle)
+
+6 - FUTURE OFFER
+"Not that I have a buyer right now -- but if you decided to sell and got a great offer right away, would that cause any problems for you?"
+
+7 - APPOINTMENT CLOSE (permission > future-pace > because)
+"Before I let you go, can I make a quick recommendation? Let's pretend I did a full value analysis, the numbers made sense, and you genuinely believed selling now was a viable option -- any reason you wouldn't want to explore that a bit more..."
+[Pause -- the second he speaks:]
+"Because -- let's face it, you're not gonna do anything unless it makes sense, right?"
+Then close the day.` },
+
+{ id:'flow-circle', title:'Circle Prospecting - Call Flow', category:'Call Flow', callStage:'Opening', leadType:'Circle Prospecting', objection:'', tone:'Warm', needsPractice:true,
+  whenToUse:'Circle/geographic prospecting. Plant the seed; be the first call.', principle:'Curious, neighborly, zero pressure. Circle = referral engine.',
+  text:`GOAL: Book the consult. Most start as Seller Nurture -- every call is a long-term investment.
+
+1 - PATTERN INTERRUPT
+"Hi, is this John? ... John, this is Mark. Look, don't hate me -- I'm a Realtor, and before you hang up, I was hoping to ask you something real quick. Would that be okay?"
+[Pause -- hand him control.]
+
+2 - NEIGHBORHOOD HOOK
+"I appreciate that. Look, you're gonna think this is crazy -- but there aren't many homes for sale and buyers are actively looking to move into your neighborhood. You haven't heard of anyone thinking about selling soon, have you?"
+[Opens two doors: a referral, or his own interest.]
+
+3 - REVERSE PRESUMPTIVE
+"Got it. And if I asked whether you'd ever consider selling -- it probably wouldn't matter what you could get; you'd laugh and say you're never moving, right?"
+
+4 - DISCOVERY (ask, never pitch)
+"How long have you lived in your home?" (anchor)
+"If you were ever to make a move -- what are you looking for that you don't already have?" (latent motivation)
+"Not that I have a buyer right now -- but if you got a great offer right away, you wouldn't be able to move anytime soon, right?" (tests readiness)
+
+5 - REFERRAL ASK
+"And do me a favor -- if you think of anyone in the neighborhood who might be considering a move, you'll keep me in mind, right?"
+
+6 - APPOINTMENT CLOSE (autonomy > future-pace > because)
+"Look, I'll be upfront -- I don't know if I'm the right agent for you; you'll decide that. But let's pretend we met, and after you saw what your home's worth and what I'd do to get it sold, you believed I could help you get where you want to go next -- any reason you wouldn't explore it a bit more..."
+[Pause -- the second he speaks:]
+"Because -- let's face it, you're not gonna do anything unless it makes sense, right?"
+Then close the day. ALWAYS ask for the referral.` },
+
+{ id:'flow-probate', title:'Probate - Call Flow', category:'Call Flow', callStage:'Opening', leadType:'Probate', objection:'', tone:'Warm', needsPractice:true,
+  whenToUse:'Probate. Build trust first - a relationship, not a transaction.', principle:'Empathetic, patient, zero pressure. Lead with help, never the sale.',
+  text:`GOAL: Book a consult (often a slow yes). Lead with help.
+
+1 - PATTERN INTERRUPT (soft)
+"Hi, is this John? ... John, this is Mark. Look, don't hate me -- I'm a Realtor, and before you hang up, I was hoping you could help me out with something real quick. Would that be okay?"
+["Help me out" is softer than "ask you something." Slow down here.]
+
+2 - THE REASON + TAKEAWAY
+"I appreciate that. The reason I called -- I handle a lot of the properties that go through probate here in Bakersfield, and the one on [street] came across my desk with your name as the contact. But you don't have anything to do with that, do you?"
+
+3 - EMPATHY + OVERWHELM
+"I see -- I'm sorry for your loss. A lot of folks I work with tell me how overwhelmed they feel with the probate process and everything on their plate. I'm not sure if that's been your experience?"
+[Say the condolence and STOP. Let him talk. Do not rush.]
+
+4 - PROPERTY PAIN
+"And when it comes to the property -- most people tell me they don't even know where to start: cleaning it out, the estate sale, getting it ready to sell. But I get the feeling you haven't had to deal with any of that yet, right?"
+
+5 - 'TOO EARLY' TAKEAWAY
+"And if I asked whether you've already hired a real estate pro who specializes in probate to help you through this -- it's probably too early for that conversation, fair?"
+
+6 - DISCOVERY (gentle)
+"Where are you in the probate process right now?" (stage)
+"What's been the most overwhelming part so far?" (pain)
+"When the time comes, what would you want to have happen with the property?" (outcome)
+"Is there anyone else helping you make these decisions?" (decision-makers)
+
+7 - APPOINTMENT CLOSE (recommend > future-pace > because)
+"Can I make a recommendation before I let you go? I know you're not ready to do anything yet -- but let's pretend we met at the property, you showed me around, and after, you genuinely believed I could help you get through this and get it sold -- any reason you wouldn't invite me over just to explore it..."
+[Pause -- the second he speaks:]
+"Because -- you're not gonna do anything unless it makes sense, right?"
+Then close the day gently.` },
+
+/* ============ THE CLOSER ============ */
+{ id:'closer', title:'The Closer - End of Call', category:'Appointment Close', callStage:'Appointment Ask', leadType:'', objection:'', tone:'Confident', needsPractice:true,
+  whenToUse:'Run at the end of every qualified conversation.', principle:'No call ends without a booked appointment or a scheduled next touch. The close is permission, not a pitch.',
+  text:`A - THE CLOSE (runs on every card)
+"Look, I'll be upfront -- I don't know if I'm the right agent for you; you'll decide that." (autonomy)
+"But let's pretend we met, and after you saw my plan you genuinely believed I could sell your home and get you to [their outcome] -- any reason you wouldn't invite me over just to explore it..." (future-pace)
+[Pause first -- cut in the second they speak.]
+"Because -- let's face it, you're not gonna do anything unless it makes sense, right?" (because)
+"What day makes sense for us to get together -- would [day] or [alt] be better?" (close the day)
+
+B - IF THEY WON'T BOOK (not a hard no -- Quality Lead)
+"Fair enough -- can I ask a favor before you go, and you can be honest?"
+"I'm not asking you to decide anything right now -- but would you be against us revisiting this down the road, or is there no way you'd ever consider meeting?"
+"Sounds fair -- when would you like to hear from me again?"
+[Their answer is your follow-up date. Log it.]
+"Would it help if I emailed you my resume -- or would you just delete it?"
+"Last thing -- you're not gonna end this call and block my number, are you?"
+
+C - THE SECOND THEY BOOK (qualify -- no-show killer)
+"Quick thing -- the purpose of our meeting is just to figure out if working together makes sense. Fair?"
+"If afterward you feel hiring me doesn't make sense, you'd be comfortable telling me, right? And if I feel I can't meet your expectations, would you be upset if I told you?"
+"And if neither of us says no -- okay if we spend a few minutes at the end on next steps?"
+"Who else besides you will be part of this decision -- and will they be there too?"
+[Confirm every decision-maker attends -- non-negotiable.]
+"I almost forgot -- you're not gonna hang up and think 'what did I do, I booked a Realtor' and cancel on me, are you?"
+"Great -- I'll see you [day/time], and I'll send a confirmation."` },
+
+/* ============ OBJECTION HANDLERS (Acknowledge - Permission - Pivot) ============ */
+{ id:'obj-move', title:'The Objection Move (Acknowledge · Permission · Pivot)', category:'Objection Handler', callStage:'Objection', leadType:'', objection:'Framework', tone:'Calm', needsPractice:true,
+  prompt:`Any objection -- run this every time`,
+  whenToUse:'The structure under every objection. Never argue -- acknowledge, ask permission, pivot.', principle:'Resolving an objection WITHOUT closing for the next step = a failed rep.',
+  text:`A -> R -> P   --   run this on every objection. Never argue.
+
+STEP 1 -- AGREEABLE ACKNOWLEDGMENT
+Stroke them first to lower the defensiveness:
+"Ok, that's fair..."   "Makes sense, most people do..."   "I'm really glad you brought that up..."
+
+STEP 2 -- RESPOND WITH A PERMISSION-BASED QUESTION
+Ask permission so they stay in control:
+"Can I ask you something about that before I let you go?"
+"Can I share my biggest fear?"
+
+STEP 3 -- PIVOT TO A REVERSE-SELLING QUESTION
+Use a takeaway, then land it with the because framework:
+"I get the feeling if I told you [the thing], it wouldn't matter what I said next -- you wouldn't even hear me out, would that be fair?"
+"Because -- let's face it, you're not gonna do anything unless it makes sense, right?"` },
+
+{ id:'obj-agent', title:'Objection: Already Have an Agent', category:'Objection Handler', callStage:'Objection', leadType:'', objection:'Already have an agent', tone:'Curious', needsPractice:true,
+  prompt:`"We already have an agent."`,
+  whenToUse:'Loyalty reflex -- often not a real commitment.', principle:"Don't bash the agent. The sister-in-law line exposes whether the loyalty is real, then the because framework reopens the door.",
+  text:`"Makes sense -- most people do."
+[Agreeable acknowledgment. Lower the defensiveness.]
+
+"Can I just ask you something about that before I let you go?"
+[listen]
+
+"Yeah, well listen -- I don't want to offend you -- the agent you're referring to, that's not your sister-in-law, is it?"
+[The disarm, said with a smile. Gives them room to admit there's no real loyalty.]
+
+"Ok, well I have to ask -- given they failed to sell it the first time, wouldn't it make sense to at least interview one other agent for a second opinion? Because -- let's face it, John, you're not gonna do anything unless it makes sense anyway, right?"
+
+ADVANCE -> "Worth 15 minutes to compare strategies?"` },
+
+{ id:'obj-notselling', title:'Objection: Not Selling / Never Moving', category:'Objection Handler', callStage:'Objection', leadType:'', objection:'Not selling', tone:'Calm', needsPractice:true,
+  prompt:`"We're not selling / we're never moving."`,
+  whenToUse:'Status-quo reflex. Get curious about why.', principle:'ABC question to isolate, reverse-presumptive takeaway to test it. A no is a question, not a wall.',
+  text:`"Yeah, fair enough..."
+[Agreeable acknowledgment.]
+
+"Can I ask you one last question before I let you go?"
+[listen]
+
+"As far as not selling -- is that because you've given up on the idea of moving, you don't believe there's a buyer for your home, or is it something else?"
+[ABC question. Let him pick -- it surfaces the real reason.]
+
+"And if I asked whether you'd ever sell -- even for a great price -- you'd probably just laugh and tell me you're never moving, right?"
+[Reverse presumptive. The takeaway invites the truth.]
+
+ADVANCE -> If it's a true no: go to The Closer (Quality Lead) and get permission to follow up.` },
+
+{ id:'obj-fsbo', title:'Objection: Selling It Ourselves', category:'Objection Handler', callStage:'Objection', leadType:'', objection:'Selling it ourselves', tone:'Curious', needsPractice:true,
+  prompt:`"We're selling it ourselves."`,
+  whenToUse:'FSBO mindset on any lead.', principle:"Respect the choice, then 'biggest fear' + takeaway so he talks himself toward a conversation.",
+  text:`"That makes sense -- a lot of people start there, and I respect it."
+[Agreeable acknowledgment.]
+
+"Can I share my biggest fear before I let you go?"
+[listen]
+
+"I get the feeling that if I told you I could net you the money you need and take the stress of selling on your own off your plate, you'd probably just laugh at me and wouldn't even consider it, right?"
+[Biggest fear + takeaway. He has to argue back toward you.]
+
+"Because -- let's face it, John, you're not gonna do anything unless it makes sense, right?"
+
+ADVANCE -> "Would it hurt to get a second opinion on your strategy?"` },
+
+{ id:'obj-commission', title:'Objection: Commission Too High', category:'Objection Handler', callStage:'Objection', leadType:'', objection:'Price concern', tone:'Calm', needsPractice:true,
+  prompt:`"Your commission's too high."  /  "How much do you charge?"`,
+  whenToUse:'Fee pushback. Never defend the % -- redirect to net.', principle:"Never defend the commission. 'Biggest fear' + takeaway moves it from fee to value and net.",
+  text:`"I'm really glad you brought that up..."
+[Agreeable acknowledgment -- never get defensive about the fee.]
+
+"And I'm going to tell you -- but can I share my biggest fear first?"
+[listen]
+
+"I get the feeling that if I told you I'm not the cheapest agent, then even if you believed I was the best agent to sell your home, it probably wouldn't matter -- you'd never even consider meeting with me, right?"
+[Biggest fear + takeaway. Redirects from price to value.]
+
+ADVANCE -> "Most sellers care less about the fee and more about what they actually walk away with -- worth comparing the numbers side by side?"` },
+
+{ id:'obj-waiting', title:'Objection: Waiting / Market Will Improve', category:'Objection Handler', callStage:'Objection', leadType:'', objection:'Too busy right now', tone:'Calm', needsPractice:true,
+  prompt:`"We're waiting / the market'll get better."`,
+  whenToUse:'Timing stall -- usually a different objection in disguise.', principle:'ABC question isolates what waiting really means, the because framework advances it.',
+  text:`"Yeah, fair enough..."
+[Agreeable acknowledgment.]
+
+"And can I ask you one last question before I let you go?"
+[listen]
+
+"As far as waiting -- is that because you've given up on the idea of moving, you don't believe there's a buyer for your home, or is it something else?"
+[ABC question. Isolate what 'waiting' is really about.]
+
+ADVANCE -> "Make sense to at least build the plan now so you're ready the moment the timing's right? Because -- let's face it, you're not gonna do anything unless it makes sense anyway, right?"` },
+
+{ id:'obj-think', title:'Objection: Need to Think About It', category:'Objection Handler', callStage:'Objection', leadType:'', objection:'Need family input', tone:'Calm', needsPractice:true,
+  prompt:`"We need to think about it."`,
+  whenToUse:'The catch-all stall. Isolate the real reason.', principle:"'Think about it' is a fog. ABC question to isolate, then advance with the because framework.",
+  text:`"Of course -- that's fair."
+[Agreeable acknowledgment.]
+
+"Can I ask you something about that before I let you go?"
+[listen]
+
+"When you say you need to think about it -- is that the timing, the price, the process, or whether I'm the right agent... or is it something else?"
+[ABC question to isolate the real hesitation.]
+
+"And I get the feeling that if we don't pin down what it really is, this just quietly slips away -- would that be fair?"
+[Gentle takeaway.]
+
+ADVANCE -> "Would it help to talk those through for 10 minutes -- then you decide? Because -- let's face it, you're not gonna do anything unless it makes sense, right?"` }
+
+];
+const CATEGORIES = ['Call Flow','Reverse Selling Question','Objection Handler','Appointment Close','Follow-Up','Voicemail','Text','Email'];
+const STAGE_ORDER = ['Opening','Qualifying','Objection','Appointment Ask','Follow-Up','Re-Engage'];
+
+/* ---------- state ---------- */
+const LS = {
+  scripts:'vault.scripts.v3',
+  scores:'vault.scores.v1',
+  streak:'vault.streak.v1'
+};
+function load(key,fallback){ try{const v=localStorage.getItem(key);return v?JSON.parse(v):fallback;}catch(e){return fallback;} }
+function save(key,val){ try{localStorage.setItem(key,JSON.stringify(val));}catch(e){} }
+
+let scripts = load(LS.scripts, null);
+if(!scripts){ scripts = SEED.map(s=>({worksWell:false, lastPracticed:null, needsPractice:true, mastery:0, ...s})); save(LS.scripts,scripts); }
+let scores = load(LS.scores, []);
+
+/* ---------- IndexedDB for audio takes ---------- */
+let db=null;
+function openDB(){return new Promise((res)=>{ if(db) return res(db); const r=indexedDB.open('vaultTakes',1);
+  r.onupgradeneeded=e=>{const d=e.target.result; if(!d.objectStoreNames.contains('takes')) d.createObjectStore('takes',{keyPath:'id'});};
+  r.onsuccess=e=>{db=e.target.result;res(db);}; r.onerror=()=>res(null); });}
+async function putTake(t){const d=await openDB(); if(!d) return; return new Promise(r=>{const tx=d.transaction('takes','readwrite');tx.objectStore('takes').put(t);tx.oncomplete=()=>r();tx.onerror=()=>r();});}
+async function getTakes(scriptId){const d=await openDB(); if(!d) return []; return new Promise(r=>{const out=[];const tx=d.transaction('takes','readonly');const cur=tx.objectStore('takes').openCursor();cur.onsuccess=e=>{const c=e.target.result;if(c){if(!scriptId||c.value.scriptId===scriptId)out.push(c.value);c.continue();}else r(out.sort((a,b)=>b.date-a.date));};cur.onerror=()=>r(out);});}
+async function delTake(id){const d=await openDB(); if(!d) return; return new Promise(r=>{const tx=d.transaction('takes','readwrite');tx.objectStore('takes').delete(id);tx.oncomplete=()=>r();tx.onerror=()=>r();});}
+
+/* ---------- helpers ---------- */
+const $=s=>document.querySelector(s);
+const $$=s=>Array.from(document.querySelectorAll(s));
+function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),1600);}
+function esc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function fmtDate(ts){const d=new Date(ts);return d.toLocaleDateString(undefined,{month:'short',day:'numeric'})+' '+d.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'});}
+function copyText(txt){
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(()=>toast('Copied to clipboard')).catch(()=>fallbackCopy(txt));}
+  else fallbackCopy(txt);
+}
+function fallbackCopy(txt){const ta=document.createElement('textarea');ta.value=txt;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();try{document.execCommand('copy');toast('Copied to clipboard');}catch(e){toast('Copy not supported');}document.body.removeChild(ta);}
+function badgeClass(cat){return cat==='Objection Handler'?'b-obj':cat==='Appointment Close'?'b-close':cat==='Voicemail'?'b-vm':'b-cat';}
+function styleScriptText(t){
+  // dim stage-direction lines in [brackets]
+  return esc(t).split('\n').map(line=>{
+    const tr=line.trim();
+    if(tr.startsWith('[')&&tr.endsWith(']')) return '<span class="stage">'+line+'</span>';
+    return line;
+  }).join('\n');
+}
+
+/* ---------- mastery scoring helpers (#5) ---------- */
+function masteryDotsHTML(s){
+  const m=s.mastery||0; let d='<span class="mlabel">MASTERY</span>';
+  for(let i=1;i<=5;i++) d+=`<span class="dot ${i<=m?'on':''}" data-n="${i}"></span>`;
+  return d;
+}
+function setMastery(s,n){ s.mastery=n; s.needsPractice=n<4; s.worksWell=n>=4; save(LS.scripts,scripts); updateStats(); }
+function renderRateDots(sel,s,cb){
+  const el=$(sel); if(!el)return; const m=s.mastery||0; let h='';
+  for(let i=1;i<=5;i++) h+=`<span class="dot big ${i<=m?'on':''}" data-n="${i}"></span>`;
+  el.innerHTML=h;
+  el.querySelectorAll('.dot').forEach(d=>d.onclick=()=>{const n=+d.dataset.n;el.querySelectorAll('.dot').forEach(x=>x.classList.toggle('on',+x.dataset.n<=n));cb&&cb(n);});
+}
+/* ---------- objection quick-pull (#2) ---------- */
+function openObjectionQuickPull(){
+  const handlers=scripts.filter(s=>s.category==='Objection Handler');
+  if(!handlers.length){openOverlay('OBJECTION','<div class="empty">No objection handlers yet.</div>');return;}
+  function list(){
+    const html=`<div class="ov-title">Objection — pull the line</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.5">Mid-call? Tap what they just said, read the move, then tap back and keep going.</p>
+      ${handlers.map(s=>`<button class="tile" data-oid="${s.id}"><div class="ico" style="color:var(--red);border-color:rgba(239,68,68,.4)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z"/></svg></div><div><h4>${esc(s.prompt||s.objection||s.title)}</h4><p>${esc(s.title)}</p></div><div class="arrow">›</div></button>`).join('')}`;
+    openOverlay('OBJECTION',html);
+    ovBody.querySelectorAll('[data-oid]').forEach(b=>b.onclick=()=>detail(scripts.find(x=>x.id===b.dataset.oid)));
+  }
+  function detail(s){
+    const html=`<button class="bigbtn ghost" id="objBack" style="margin-bottom:14px">‹ Back to objections</button>
+      ${s.prompt?`<div class="ambush-prompt"><div class="who">They said</div><div class="said">${esc(s.prompt)}</div></div>`:''}
+      <div class="ov-title">${esc(s.title)}</div>
+      <div class="scripttext">${styleScriptText(s.text)}</div>
+      ${s.principle?`<div class="principle"><b>Why it works:</b> ${esc(s.principle)}</div>`:''}
+      <button class="bigbtn solid" id="objCopy" style="margin-top:6px">Copy this line</button>`;
+    openOverlay('OBJECTION',html);
+    $('#objBack').onclick=list;
+    $('#objCopy').onclick=()=>copyText(s.text);
+  }
+  list();
+}
+
+/* ---------- card rendering ---------- */
+function cardHTML(s){
+  const badges=[`<span class="badge ${badgeClass(s.category)}">${esc(s.category)}</span>`];
+  if(s.tone) badges.push(`<span class="badge b-tone">${esc(s.tone)}</span>`);
+  if(s.leadType) badges.push(`<span class="badge b-lead">${esc(s.leadType)}</span>`);
+  if(s.objection) badges.push(`<span class="badge b-obj">${esc(s.objection)}</span>`);
+  return `<div class="card" data-id="${s.id}">
+    <div class="top"><h3>${esc(s.title)}</h3></div>
+    <div class="badges">${badges.join('')}</div>
+    <div class="mastery" data-id="${s.id}">${masteryDotsHTML(s)}</div>
+    ${s.whenToUse?`<div class="whenuse">${esc(s.whenToUse)}</div>`:''}
+    <div class="scripttext">${styleScriptText(s.text)}</div>
+    ${s.principle?`<div class="principle"><b>Why it works:</b> ${esc(s.principle)}</div>`:''}
+    <div class="actions">
+      <button class="act primary" data-do="copy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="1"/><path d="M5 15V5a1 1 0 0 1 1-1h10"/></svg>Copy</button>
+      <button class="act rec" data-do="rec"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5" fill="currentColor" stroke="none"/></svg>Record</button>
+      <button class="act" data-do="takes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M5 12l4-4M5 12l4 4"/></svg>Takes <span class="tc"></span></button>
+      <button class="act ${s.needsPractice?'':'on'}" data-do="practice"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>${s.needsPractice?'Needs work':'Works well'}</button>
+      <button class="act" data-do="memorize"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h10M4 18h6"/></svg>Memorize</button>
+      <button class="act" data-do="pace"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 4l13 8-13 8z" fill="currentColor" stroke="none"/></svg>Pace</button>
+      ${(s.category==='Call Flow'||s.category==='Appointment Close')?`<button class="act live" data-do="live"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.81.36 1.6.7 2.34a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.74-1.74a2 2 0 0 1 2.11-.45c.74.34 1.53.57 2.34.7A2 2 0 0 1 22 16.92z"/></svg>Live Call</button>`:''}
+    </div>
+    <div class="takes"></div>
+  </div>`;
+}
+
+function attachCard(card){
+  const id=card.dataset.id; const s=scripts.find(x=>x.id===id);
+  card.querySelector('[data-do="copy"]').onclick=()=>copyText(s.text);
+  card.querySelector('[data-do="rec"]').onclick=(e)=>toggleRecord(s,e.currentTarget,card);
+  card.querySelector('[data-do="takes"]').onclick=()=>toggleTakes(s,card);
+  card.querySelector('[data-do="memorize"]').onclick=()=>openFade(s);
+  card.querySelector('[data-do="pace"]').onclick=()=>openPacer(s);
+  {const lb=card.querySelector('[data-do="live"]'); if(lb)lb.onclick=()=>openLiveCall(s);}
+  card.querySelector('[data-do="practice"]').onclick=(e)=>{
+    s.worksWell=!s.worksWell?true:false; s.needsPractice=!s.worksWell; save(LS.scripts,scripts);
+    const b=e.currentTarget; b.classList.toggle('on',!s.needsPractice); b.lastChild.textContent=s.needsPractice?'Needs work':'Works well';
+    toast(s.needsPractice?'Marked: needs work':'Marked: works well'); updateStats();
+  };
+  card.querySelectorAll('.mastery .dot').forEach(d=>d.onclick=()=>{const n=+d.dataset.n;setMastery(s,n);card.querySelectorAll('.mastery .dot').forEach(x=>x.classList.toggle('on',+x.dataset.n<=n));toast('Mastery '+n+'/5');});
+  refreshTakeCount(s,card);
+}
+async function refreshTakeCount(s,card){const t=await getTakes(s.id);const el=card.querySelector('.tc');if(el)el.textContent=t.length?`(${t.length})`:'';}
+
+async function toggleTakes(s,card){
+  const box=card.querySelector('.takes'); if(box.classList.contains('show')){box.classList.remove('show');return;}
+  const takes=await getTakes(s.id);
+  box.innerHTML = takes.length? takes.map(t=>`<div class="take" data-tid="${t.id}"><span class="when">${fmtDate(t.date)}</span><button data-play>▶ Play</button><button class="del" data-del>Delete</button></div>`).join('') : '<div style="font-size:12px;color:var(--muted);padding:4px 0">No recordings yet. Tap Record to capture a take.</div>';
+  box.classList.add('show');
+  box.querySelectorAll('[data-play]').forEach(btn=>btn.onclick=async()=>{const tid=btn.closest('.take').dataset.tid;const all=await getTakes(s.id);const tk=all.find(x=>x.id===tid);if(tk){const url=URL.createObjectURL(tk.blob);const a=new Audio(url);a.play();}});
+  box.querySelectorAll('[data-del]').forEach(btn=>btn.onclick=async()=>{const tid=btn.closest('.take').dataset.tid;await delTake(tid);toast('Take deleted');toggleTakes(s,card);toggleTakes(s,card);refreshTakeCount(s,card);});
+}
+
+/* ---------- recording ---------- */
+let mediaRecorder=null, recChunks=[], recScriptId=null, recBtn=null, recCard=null;
+let paceTimer=null;
+async function toggleRecord(s,btn,card){
+  if(mediaRecorder&&mediaRecorder.state==='recording'){ mediaRecorder.stop(); return; }
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){toast('Recording needs a secure (https) connection');return;}
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    recChunks=[]; recScriptId=s.id; recBtn=btn; recCard=card;
+    mediaRecorder=new MediaRecorder(stream);
+    mediaRecorder.ondataavailable=e=>{if(e.data.size>0)recChunks.push(e.data);};
+    mediaRecorder.onstop=async()=>{
+      const blob=new Blob(recChunks,{type:mediaRecorder.mimeType||'audio/webm'});
+      stream.getTracks().forEach(t=>t.stop());
+      await putTake({id:'t_'+Date.now(),scriptId:recScriptId,blob,date:Date.now()});
+      btn.classList.remove('recording'); btn.lastChild.textContent='Record';
+      toast('Take saved'); markPracticed(s); if(recCard)refreshTakeCount(s,recCard);
+      mediaRecorder=null;
+    };
+    mediaRecorder.start();
+    btn.classList.add('recording'); btn.lastChild.textContent='Stop';
+    toast('Recording — tap Stop when done');
+  }catch(e){ toast('Microphone permission needed'); }
+}
+
+/* ---------- practice tracking + streak ---------- */
+function markPracticed(s){
+  const today=new Date().toISOString().slice(0,10);
+  s.lastPracticed=today; save(LS.scripts,scripts);
+  const st=load(LS.streak,{last:null,count:0});
+  if(st.last!==today){
+    const y=new Date(Date.now()-864e5).toISOString().slice(0,10);
+    st.count=(st.last===y)?st.count+1:1; st.last=today; save(LS.streak,st);
+  }
+  updateStats();
+}
+function updateStats(){
+  const st=load(LS.streak,{count:0});
+  $('#stStreak').textContent=st.count||0;
+  const n=scripts.length; const sum=scripts.reduce((a,s)=>a+(s.mastery||0),0);
+  $('#stReps').textContent=(n?Math.round((sum/(n*5))*100):0)+'%';
+  $('#stWeak').textContent=scripts.filter(s=>(s.mastery||0)<4).length;
+}
+
+/* ---------- screen renders ---------- */
+let activeCat='All';
+function renderBrowse(){
+  const chips=$('#catChips');
+  const cats=['All',...CATEGORIES.filter(c=>scripts.some(s=>s.category===c))];
+  chips.innerHTML=cats.map(c=>`<button class="chip ${c===activeCat?'on':''}" data-cat="${esc(c)}">${esc(c)}</button>`).join('');
+  chips.querySelectorAll('.chip').forEach(ch=>ch.onclick=()=>{activeCat=ch.dataset.cat;renderBrowse();});
+  const list=$('#browseList');
+  const items=scripts.filter(s=>activeCat==='All'||s.category===activeCat);
+  list.innerHTML=items.map(cardHTML).join('');
+  list.querySelectorAll('.card').forEach(attachCard);
+}
+function renderFlow(){
+  const list=$('#flowList'); let html='';
+  STAGE_ORDER.forEach((stage,i)=>{
+    const items=scripts.filter(s=>s.callStage===stage);
+    if(!items.length) return;
+    html+=`<div class="flowstage"><div class="head"><div class="num">${i+1}</div><h4>${esc(stage)}</h4></div>${items.map(cardHTML).join('')}</div>`;
+  });
+  list.innerHTML=html||'<div class="empty">No call-flow scripts yet.</div>';
+  list.querySelectorAll('.card').forEach(attachCard);
+}
+function renderObj(){
+  const list=$('#objList');
+  const items=scripts.filter(s=>s.category==='Objection Handler');
+  list.innerHTML=items.length?items.map(cardHTML).join(''):'<div class="empty">No objection handlers yet. Add one with the + button.</div>';
+  list.querySelectorAll('.card').forEach(attachCard);
+}
+function renderSearch(q){
+  const list=$('#searchList'); const term=(q||'').trim().toLowerCase();
+  if(!term){list.innerHTML='<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><div>Type to search across every script — words, objections, lead types.</div></div>';return;}
+  const items=scripts.filter(s=>(s.title+' '+s.text+' '+s.category+' '+(s.objection||'')+' '+(s.leadType||'')+' '+(s.whenToUse||'')).toLowerCase().includes(term));
+  list.innerHTML=items.length?items.map(cardHTML).join(''):'<div class="empty">No scripts match that. Try a different word.</div>';
+  list.querySelectorAll('.card').forEach(attachCard);
+}
+
+/* ---------- navigation ---------- */
+function show(screen){
+  $$('.screen').forEach(s=>s.classList.remove('active'));
+  $('#s-'+screen).classList.add('active');
+  $$('.tab').forEach(t=>t.classList.toggle('on',t.dataset.screen===screen));
+  if(screen==='browse')renderBrowse();
+  if(screen==='flow')renderFlow();
+  if(screen==='obj')renderObj();
+  if(screen==='drill')updateStats();
+  if(screen==='search'){renderSearch($('#searchInput').value);$('#searchInput').focus();}
+  window.scrollTo(0,0);
+}
+$$('.tab').forEach(t=>t.onclick=()=>show(t.dataset.screen));
+$('#searchInput').addEventListener('input',e=>renderSearch(e.target.value));
+
+/* ---------- overlay framework ---------- */
+const ov=$('#overlay'),ovBody=$('#ovBody'),ovKicker=$('#ovKicker');
+function openOverlay(kicker,html){ovKicker.textContent=kicker;ovBody.innerHTML=html;ov.classList.add('show');ovBody.scrollTop=0;}
+$('#ovClose').onclick=()=>{ov.classList.remove('show');ovBody.innerHTML='';clearTimeout(paceTimer);};
+
+/* ---------- Memorization Fade ---------- */
+function openFade(s){
+  const words=s.text.split(/(\s+)/);
+  const html=`<div class="ov-title">${esc(s.title)}</div>
+    <div class="slider-wrap"><label>Hide level — <span id="fadePct">0%</span></label><input type="range" id="fadeSlider" min="0" max="100" value="0"/></div>
+    <div class="fadetext" id="fadeText"></div>
+    <button class="bigbtn" id="fadeRec">● Record yourself saying it</button>
+    <div class="rate-block"><div class="rate-label">How solid did that feel?</div><div class="rate-dots" id="fadeRate"></div></div>`;
+  openOverlay('MEMORIZE',html);
+  const ft=$('#fadeText');
+  function paint(pct){
+    // deterministically hide a fraction of the meaningful words
+    let wi=0; const wordIdx=[];
+    words.forEach((w,i)=>{if(w.trim().length>2){wordIdx.push(i);}});
+    const hideN=Math.round(wordIdx.length*pct/100);
+    // hide a spread-out set
+    const hideSet=new Set();
+    if(hideN>0){const step=wordIdx.length/hideN;for(let k=0;k<hideN;k++){hideSet.add(wordIdx[Math.floor(k*step)]);}}
+    ft.innerHTML=words.map((w,i)=>{
+      if(w.trim()==='')return w.replace(/\n/g,'<br>');
+      const hidden=hideSet.has(i);
+      return `<span class="fadeword ${hidden?'hidden':''}">${esc(w)}</span>`;
+    }).join('');
+  }
+  paint(0);
+  $('#fadeSlider').oninput=e=>{const v=+e.target.value;$('#fadePct').textContent=v+'%';paint(v);};
+  $('#fadeRec').onclick=function(){
+    // reuse recorder via a hidden flow
+    fadeRecord(s,this);
+  };
+  renderRateDots('#fadeRate',s,(n)=>{setMastery(s,n);markPracticed(s);toast('Logged — mastery '+n+'/5');setTimeout(()=>ov.classList.remove('show'),350);});
+}
+async function fadeRecord(s,btn){
+  if(mediaRecorder&&mediaRecorder.state==='recording'){mediaRecorder.stop();btn.textContent='● Record yourself saying it';return;}
+  if(!navigator.mediaDevices){toast('Recording needs https');return;}
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    recChunks=[];mediaRecorder=new MediaRecorder(stream);
+    mediaRecorder.ondataavailable=e=>{if(e.data.size>0)recChunks.push(e.data);};
+    mediaRecorder.onstop=async()=>{const blob=new Blob(recChunks,{type:mediaRecorder.mimeType||'audio/webm'});stream.getTracks().forEach(t=>t.stop());await putTake({id:'t_'+Date.now(),scriptId:s.id,blob,date:Date.now()});toast('Take saved');markPracticed(s);mediaRecorder=null;btn.textContent='● Record yourself saying it';};
+    mediaRecorder.start();btn.textContent='■ Stop recording';toast('Recording…');
+  }catch(e){toast('Microphone permission needed');}
+}
+
+/* ---------- Pacing / Teleprompter (#1) ---------- */
+function openPacer(s){
+  clearTimeout(paceTimer);
+  const SPEEDS={slow:1.7,med:2.4,fast:3.2};
+  let wps=SPEEDS.med, playing=true, i=0;
+  const lines=s.text.split('\n').map(t=>{
+    const tr=t.trim();
+    const isCue=tr.startsWith('[')&&tr.endsWith(']');
+    const isBlank=tr==='';
+    const words=tr.replace(/[^A-Za-z0-9']+/g,' ').trim().split(/\s+/).filter(Boolean).length;
+    let pause=false;
+    if(!isCue&&!isBlank){
+      const low=tr.toLowerCase();
+      if(/right\?\s*$/.test(tr)) pause=true;
+      else if(/fair\?\s*$/.test(tr)||low.indexOf('would that be fair')>=0) pause=true;
+      else if(/(\.\.\.|\u2026)\s*$/.test(tr)) pause=true;
+      else if(low.indexOf('because')===0||low.indexOf('"because')===0) pause=true;
+    }
+    return {t,isCue,isBlank,words,pause};
+  });
+  function dur(L){ if(L.isBlank)return 240; if(L.isCue)return 1150; return Math.max(820,Math.min(7000,Math.round(L.words/wps*1000))); }
+  const html=`<div class="ov-title">Pace it — ${esc(s.title)}</div>
+    <p style="font-size:12.5px;color:var(--muted);margin-bottom:12px;line-height:1.5">Read out loud, match the highlight. When it says <b style="color:var(--accent)">HOLD</b>, stop and let them answer — that pause is the whole game.</p>
+    <div class="pace-ctrl"><div class="pace-speeds">
+      <button class="pchip" data-sp="slow">Slow</button>
+      <button class="pchip on" data-sp="med">Medium</button>
+      <button class="pchip" data-sp="fast">Fast</button>
+    </div></div>
+    <div class="pace-stage" id="paceStage"><div class="pace-track" id="paceTrack">
+      ${lines.map((L,idx)=>`<div class="pl ${L.isCue?'cue':''} ${L.isBlank?'blank':''}" data-i="${idx}">${L.isBlank?'&nbsp;':esc(L.t)}${L.pause?'<span class="holdpill">HOLD — let them answer</span>':''}</div>`).join('')}
+    </div></div>
+    <div class="pace-buttons">
+      <button class="bigbtn solid" id="pacePlay">❚❚ Pause</button>
+      <button class="bigbtn ghost" id="paceRestart">↻ Restart</button>
+      <button class="bigbtn ghost" id="paceRec">● Record</button>
+    </div>
+    <div class="pace-finish" id="paceFinish" style="display:none">
+      <div class="rate-label">Nice rep — how solid did that feel?</div>
+      <div class="rate-dots" id="paceRate"></div>
+    </div>`;
+  openOverlay('PACE',html);
+  const stage=$('#paceStage'), track=$('#paceTrack');
+  const els=[...track.querySelectorAll('.pl')];
+  function center(){ const el=els[i]; if(!el)return; const off=el.offsetTop+el.offsetHeight/2; track.style.transform='translateY('+(-off)+'px)'; }
+  function paint(){ els.forEach((el,idx)=>{el.classList.toggle('active',idx===i);el.classList.toggle('past',idx<i);el.classList.remove('holding');}); center(); }
+  function finish(){ playing=false; clearTimeout(paceTimer); $('#pacePlay').textContent='▶ Play'; $('#paceFinish').style.display='block'; renderRateDots('#paceRate',s,(n)=>{setMastery(s,n);toast('Logged — mastery '+n+'/5');}); markPracticed(s); }
+  function next(){
+    if(i>=els.length){ finish(); return; }
+    paint();
+    if(!playing) return;
+    const L=lines[i], base=dur(L);
+    if(L.pause&&!L.isCue&&!L.isBlank){
+      paceTimer=setTimeout(()=>{ if(!playing)return; if(els[i])els[i].classList.add('holding'); paceTimer=setTimeout(()=>{ i++; next(); },1900); }, base);
+    } else {
+      paceTimer=setTimeout(()=>{ i++; next(); }, base);
+    }
+  }
+  function play(){ playing=true; $('#pacePlay').textContent='❚❚ Pause'; $('#paceFinish').style.display='none'; next(); }
+  function pause(){ playing=false; clearTimeout(paceTimer); $('#pacePlay').textContent='▶ Play'; }
+  $('#pacePlay').onclick=()=>{ if(i>=els.length)i=0; playing?pause():play(); };
+  $('#paceRestart').onclick=()=>{ clearTimeout(paceTimer); i=0; $('#paceFinish').style.display='none'; play(); };
+  $('#paceRec').onclick=function(){ fadeRecord(s,this); };
+  ovBody.querySelectorAll('.pchip').forEach(c=>c.onclick=()=>{ ovBody.querySelectorAll('.pchip').forEach(x=>x.classList.remove('on')); c.classList.add('on'); wps=SPEEDS[c.dataset.sp]; });
+  els.forEach(el=>el.onclick=()=>{ clearTimeout(paceTimer); i=+el.dataset.i; if(playing){next();}else{paint();} });
+  paint();
+  requestAnimationFrame(play);
+}
+
+/* ---------- Live Call Mode (#1) ---------- */
+function parseSteps(text){
+  const lines=text.split('\n');
+  const steps=[]; const intro=[]; let cur=null;
+  const re=/^([0-9]+|[A-Z])\s*[-\u2013]\s*(.+)$/;
+  lines.forEach(line=>{
+    const tr=line.trim();
+    const m=tr.match(re);
+    let header=false;
+    if(m){ const head=m[2].split('(')[0].trim(); if(head && head===head.toUpperCase() && /[A-Z]/.test(head)) header=true; }
+    if(header){ cur={label:tr,body:[]}; steps.push(cur); }
+    else if(cur){ cur.body.push(line); }
+    else { intro.push(line); }
+  });
+  return {intro:intro.join('\n').trim(), steps};
+}
+function openLiveCall(s){
+  clearTimeout(paceTimer);
+  const parsed=parseSteps(s.text);
+  let steps=parsed.steps;
+  if(!steps.length) steps=[{label:s.title, body:[s.text]}];
+  const intro=parsed.intro, n=steps.length;
+  let idx=0;
+  const TON=[
+    'Slow down -- calm beats eager.',
+    'Smile. They can hear it.',
+    'Drop your tone at the end of statements. Down = confident.',
+    "You're vetting them. Curious, never pushy.",
+    'Ask, then go silent. Let the pause do the work.',
+    'After the takeaway -- STOP. Let them fill it.',
+    'They should talk more than you.'
+  ];
+  function precall(){
+    const html=`<div class="ov-title">Live Call -- ${esc(s.title)}</div>
+      ${s.leadType?`<div class="lc-tag">${esc(s.leadType)}</div>`:''}
+      <div class="lc-sub">Run your tonality before you dial:</div>
+      <div class="lc-checklist">${TON.map((t,i)=>`<button class="lc-check" data-i="${i}"><span class="box"></span><span>${esc(t)}</span></button>`).join('')}</div>
+      ${intro?`<div class="lc-goal">${styleScriptText(intro)}</div>`:''}
+      <button class="bigbtn solid" id="lcStart">Start the call -></button>`;
+    openOverlay('LIVE',html);
+    ovBody.querySelectorAll('.lc-check').forEach(b=>b.onclick=()=>b.classList.toggle('armed'));
+    $('#lcStart').onclick=()=>{ idx=0; step(); };
+  }
+  function step(){
+    const st=steps[idx], last=idx===n-1;
+    const body=(Array.isArray(st.body)?st.body.join('\n'):st.body).trim();
+    const html=`<div class="lc-top"><span class="lc-count">STEP ${idx+1} / ${n}</span><button class="lc-restart" id="lcPre">tonality</button></div>
+      <div class="lc-name">${esc(st.label)}</div>
+      <div class="lc-body">${styleScriptText(body)}</div>
+      <div class="lc-bar">
+        <button class="lc-btn" id="lcBack" ${idx===0?'disabled':''}>‹ Back</button>
+        <button class="lc-btn obj" id="lcObj">Objection</button>
+        <button class="lc-btn next" id="lcNext">${last?'Done ✓':'Next ›'}</button>
+      </div>`;
+    openOverlay('LIVE',html);
+    $('#lcBack').onclick=()=>{ if(idx>0){ idx--; step(); } };
+    $('#lcNext').onclick=()=>{ if(last){ finish(); } else { idx++; step(); } };
+    $('#lcObj').onclick=()=>objlist();
+    $('#lcPre').onclick=()=>precall();
+  }
+  function objlist(){
+    const handlers=scripts.filter(x=>x.category==='Objection Handler');
+    const html=`<button class="bigbtn ghost" id="lcObjBack" style="margin-bottom:14px">‹ Back to the call</button>
+      <div class="ov-title">They pushed back?</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Tap what they just said.</p>
+      ${handlers.map(x=>`<button class="tile" data-oid="${x.id}"><div class="ico" style="color:var(--red);border-color:rgba(239,68,68,.4)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z"/></svg></div><div><h4>${esc(x.prompt||x.objection||x.title)}</h4></div><div class="arrow">›</div></button>`).join('')}`;
+    openOverlay('LIVE',html);
+    $('#lcObjBack').onclick=()=>step();
+    ovBody.querySelectorAll('[data-oid]').forEach(b=>b.onclick=()=>objdetail(scripts.find(x=>x.id===b.dataset.oid)));
+  }
+  function objdetail(o){
+    const html=`<button class="bigbtn ghost" id="lcDetBack" style="margin-bottom:14px">‹ Back to objections</button>
+      ${o.prompt?`<div class="ambush-prompt"><div class="who">They said</div><div class="said">${esc(o.prompt)}</div></div>`:''}
+      <div class="lc-name">${esc(o.title)}</div>
+      <div class="lc-body">${styleScriptText(o.text)}</div>
+      <div class="lc-bar"><button class="lc-btn" id="lcDetBack2">‹ Objections</button><button class="lc-btn next" id="lcDetCall">Back to call ›</button></div>`;
+    openOverlay('LIVE',html);
+    $('#lcDetBack').onclick=()=>objlist();
+    $('#lcDetBack2').onclick=()=>objlist();
+    $('#lcDetCall').onclick=()=>step();
+  }
+  function finish(){
+    markPracticed(s);
+    const closer = s.id!=='closer' ? scripts.find(x=>x.id==='closer') : null;
+    const html=`<div class="ov-title">Call complete</div>
+      <div class="lc-sub">How did your delivery feel?</div>
+      <div class="rate-dots" id="lcRate" style="justify-content:center;margin:16px 0 22px"></div>
+      <button class="bigbtn solid" id="lcAgain">↻ Run it back</button>
+      ${closer?`<button class="bigbtn ghost" id="lcCloser">Go to The Closer -></button>`:''}`;
+    openOverlay('LIVE',html);
+    renderRateDots('#lcRate',s,(nn)=>{ setMastery(s,nn); toast('Logged -- mastery '+nn+'/5'); });
+    $('#lcAgain').onclick=()=>{ idx=0; step(); };
+    if(closer){ $('#lcCloser').onclick=()=>openLiveCall(closer); }
+  }
+  precall();
+}
+
+/* ---------- Smart Drill Queue ---------- */
+function openQueue(){
+  const ranked=[...scripts].sort((a,b)=>{
+    const am=(a.mastery||0), bm=(b.mastery||0);
+    if(am!==bm)return am-bm;
+    const al=a.lastPracticed||''; const bl=b.lastPracticed||'';
+    return al.localeCompare(bl);
+  });
+  const html=`<div class="ov-title">Today's Drill Queue</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:18px;line-height:1.5">Worked top to bottom: weakest and stalest first. Tap one to drill it.</p>
+    ${ranked.map(s=>{const m=s.mastery||0;const col=m>=4?'var(--green)':m>=2?'var(--amber)':'var(--red)';return `<button class="tile" data-qid="${s.id}"><div class="ico" style="color:${col};border-color:${col}">${m||'–'}</div><div><h4>${esc(s.title)}</h4><p>Mastery ${m}/5${s.lastPracticed?' · last '+s.lastPracticed:' · never drilled'}</p></div><div class="arrow">›</div></button>`}).join('')}`;
+  openOverlay('QUEUE',html);
+  ovBody.querySelectorAll('[data-qid]').forEach(b=>b.onclick=()=>{const s=scripts.find(x=>x.id===b.dataset.qid);openFade(s);});
+}
+
+/* ---------- Objection Ambush ---------- */
+function openAmbush(){
+  const handlers=scripts.filter(s=>s.category==='Objection Handler');
+  if(!handlers.length){openOverlay('AMBUSH','<div class="empty">Add objection handlers first.</div>');return;}
+  function round(){
+    const s=handlers[Math.floor(Math.random()*handlers.length)];
+    const prompt=s.prompt||('"'+(s.objection||'Objection')+'"');
+    const html=`<div class="ambush-prompt"><div class="who">Seller says</div><div class="said">${esc(prompt)}</div></div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.5">Say your handler out loud — record it if you want — <b>then</b> reveal the line.</p>
+      <button class="bigbtn" id="ambRec">● Record my answer</button>
+      <button class="bigbtn solid" id="ambReveal" style="margin-top:10px">Reveal the line</button>
+      <div class="reveal" id="ambReveal2" style="margin-top:18px">
+        <div class="scripttext">${styleScriptText(s.text)}</div>
+        ${s.principle?`<div class="principle"><b>Why it works:</b> ${esc(s.principle)}</div>`:''}
+        <div class="rate-block"><div class="rate-label">How solid was your answer?</div><div class="rate-dots" id="ambRate"></div></div>
+        <button class="bigbtn ghost" id="ambNext">Next objection ↻</button>
+      </div>`;
+    openOverlay('AMBUSH',html);
+    $('#ambReveal').onclick=()=>{$('#ambReveal2').classList.add('show');$('#ambReveal').style.display='none';markPracticed(s);renderRateDots('#ambRate',s,(n)=>{setMastery(s,n);toast('Mastery '+n+'/5');});};
+    $('#ambRec').onclick=function(){fadeRecord(s,this);};
+    document.addEventListener('click',function nx(e){if(e.target&&e.target.id==='ambNext'){document.removeEventListener('click',nx);round();}});
+  }
+  round();
+}
+
+/* ---------- My Takes ---------- */
+async function openTakesLibrary(){
+  const all=await getTakes(null);
+  if(!all.length){openOverlay('TAKES','<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3v18M8 7v10M16 7v10"/></svg><div>No recordings yet.<br>Hit Record on any script to capture your first take.</div></div>');return;}
+  const byScript={};
+  all.forEach(t=>{(byScript[t.scriptId]=byScript[t.scriptId]||[]).push(t);});
+  let html='<div class="ov-title">My Takes</div>';
+  Object.keys(byScript).forEach(sid=>{
+    const s=scripts.find(x=>x.id===sid); const title=s?s.title:'(deleted script)';
+    html+=`<div style="margin-bottom:16px"><div class="eyebrow" style="color:var(--accent);margin-bottom:8px">${esc(title)}</div>`;
+    byScript[sid].forEach(t=>{html+=`<div class="take" data-tid="${t.id}"><span class="when">${fmtDate(t.date)}</span><button data-play>▶ Play</button><button class="del" data-del>Delete</button></div>`;});
+    html+='</div>';
+  });
+  openOverlay('TAKES',html);
+  ovBody.querySelectorAll('[data-play]').forEach(btn=>btn.onclick=async()=>{const tid=btn.closest('.take').dataset.tid;const tk=all.find(x=>x.id===tid);if(tk){const a=new Audio(URL.createObjectURL(tk.blob));a.play();}});
+  ovBody.querySelectorAll('[data-del]').forEach(btn=>btn.onclick=async()=>{const tid=btn.closest('.take').dataset.tid;await delTake(tid);toast('Deleted');openTakesLibrary();});
+}
+
+/* ---------- drill tiles ---------- */
+$$('#s-drill .tile').forEach(t=>t.onclick=()=>{
+  const m=t.dataset.mode;
+  if(m==='queue')openQueue();
+  else if(m==='fade-pick')openFadePicker();
+  else if(m==='ambush')openAmbush();
+  else if(m==='takes')openTakesLibrary();
+});
+function openFadePicker(){
+  const html=`<div class="ov-title">Memorization Fade</div><p style="font-size:13px;color:var(--muted);margin-bottom:18px">Pick a script to drill from memory.</p>
+    ${scripts.map(s=>`<button class="tile" data-fid="${s.id}"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h10M4 18h6"/></svg></div><div><h4>${esc(s.title)}</h4><p>${esc(s.category)}</p></div><div class="arrow">›</div></button>`).join('')}`;
+  openOverlay('MEMORIZE',html);
+  ovBody.querySelectorAll('[data-fid]').forEach(b=>b.onclick=()=>{const s=scripts.find(x=>x.id===b.dataset.fid);openFade(s);});
+}
+
+/* ---------- add / edit script ---------- */
+$('#addBtn').onclick=()=>openForm(null);
+function openForm(existing){
+  const s=existing||{title:'',category:'Call Flow',callStage:'Opening',leadType:'',objection:'',tone:'Calm',whenToUse:'',principle:'',text:''};
+  const opt=(arr,val)=>arr.map(o=>`<option ${o===val?'selected':''}>${esc(o)}</option>`).join('');
+  const html=`<div class="ov-title">${existing?'Edit script':'Add a script'}</div>
+    <div class="field"><label>Title</label><input id="fTitle" value="${esc(s.title)}" placeholder="e.g. Circle Prospecting Opener"/></div>
+    <div class="field"><label>Category</label><select id="fCat">${opt(CATEGORIES,s.category)}</select></div>
+    <div class="field"><label>Call stage</label><select id="fStage">${opt(STAGE_ORDER,s.callStage)}</select></div>
+    <div class="field"><label>Tone</label><select id="fTone">${opt(['Calm','Curious','Direct','Warm','Confident'],s.tone)}</select></div>
+    <div class="field"><label>Lead type (optional)</label><input id="fLead" value="${esc(s.leadType)}" placeholder="Expired, FSBO, Circle…"/></div>
+    <div class="field"><label>Objection prompt (for objection handlers)</label><input id="fObj" value="${esc(s.objection)}" placeholder="e.g. Not interested"/></div>
+    <div class="field"><label>When to use</label><input id="fWhen" value="${esc(s.whenToUse)}" placeholder="When do you reach for this?"/></div>
+    <div class="field"><label>Script</label><textarea id="fText" placeholder="The actual words…">${esc(s.text)}</textarea></div>
+    <div class="field"><label>Why it works (optional)</label><input id="fWhy" value="${esc(s.principle)}"/></div>
+    <button class="bigbtn solid" id="fSave">${existing?'Save changes':'Add to vault'}</button>
+    ${existing?'<button class="bigbtn ghost" id="fDel" style="margin-top:10px;color:var(--red);border-color:rgba(239,68,68,.4)">Delete script</button>':''}`;
+  openOverlay(existing?'EDIT':'ADD',html);
+  $('#fSave').onclick=()=>{
+    const data={title:$('#fTitle').value.trim()||'Untitled',category:$('#fCat').value,callStage:$('#fStage').value,tone:$('#fTone').value,leadType:$('#fLead').value.trim(),objection:$('#fObj').value.trim(),whenToUse:$('#fWhen').value.trim(),principle:$('#fWhy').value.trim(),text:$('#fText').value.trim()};
+    if(existing){Object.assign(existing,data);}
+    else{scripts.push({id:'u_'+Date.now(),needsPractice:true,worksWell:false,lastPracticed:null,mastery:0,...data});}
+    save(LS.scripts,scripts);toast(existing?'Saved':'Added to vault');ov.classList.remove('show');show('browse');
+  };
+  if(existing){$('#fDel').onclick=()=>{scripts=scripts.filter(x=>x.id!==existing.id);save(LS.scripts,scripts);toast('Deleted');ov.classList.remove('show');show('browse');};}
+}
+
+/* ---------- boot ---------- */
+renderBrowse(); updateStats();
+$('#objFab').onclick=openObjectionQuickPull;
+</script>
+</body>
+</html>
