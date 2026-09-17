@@ -294,6 +294,24 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 #s-drill{padding-bottom:85px}main{padding-bottom:85px}.topbar{flex-wrap:wrap;gap:10px}
 .session-note{width:100%;min-height:70px}.session-feedback{line-height:1.6;color:var(--muted)}
 .rate-dots{flex-wrap:wrap}.ov-close{min-width:44px;min-height:44px}
+
+/* Activity layout and reading preferences */
+[hidden]{display:none!important}
+#app h1{font-size:28px;margin:8px 0 12px}#app h2{font-size:17px;margin:22px 0 12px}
+.home-columns,.compare-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}
+.home-columns section{min-width:0}.home-columns .tile{width:100%}.compare-grid audio,.compare-grid select{width:100%;margin:12px 0}
+.scripttext,.lc-body,.fadetext{font-size:var(--reading-size,20px);line-height:var(--reading-leading,1.8)}
+.library-tools{display:flex;gap:8px;flex-wrap:wrap;padding:12px 14px}.library-tools button{min-height:44px}
+.card details>summary,details>summary{cursor:pointer;padding:14px 0;color:var(--accent)}
+.card-start{align-items:center}.card .script-details{margin-top:8px}.card .script-details .actions{margin-top:16px}
+.focus-reading .script-details .whenuse,.focus-reading .script-details .principle,.focus-reading .script-details .badges{display:none}
+.tabbar .tab span{font-size:13px}.tabbar .tab{min-height:56px}
+.delivery-cue{border-left:3px solid var(--amber);padding:10px 14px;color:var(--amber);font-size:14px;line-height:1.5}
+.call-controls{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.call-controls button,.call-controls select{min-height:44px}
+.call-controls select{max-width:100%;flex:1;min-width:180px;background:var(--surface);color:var(--text);border:1px solid var(--line);padding:8px}
+.variant-controls{margin:12px 0}.ov-close{width:auto;padding:0 12px;font-size:13px}.topbar .backup-tools{flex-wrap:wrap}
+@media(min-width:1000px){#app main{width:100%;max-width:1200px;margin:0 auto}.overlay .ov-body{width:min(100%,1000px);margin:0 auto}.overlay .ov-head{padding-inline:max(18px,calc((100% - 1000px)/2))}}
+@media(max-width:650px){.home-columns,.compare-grid{grid-template-columns:1fr;gap:8px}.topbar .wordmark{font-size:12px}.topbar .tagline{font-size:8px}.backup-tools{gap:5px}.backup-open{padding:0 8px}}
 </style>
 </head>
 <body>
@@ -304,17 +322,19 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
       <div class="tagline eyebrow">REVERSE SELLING SCRIPT SYSTEM</div>
     </div>
     <div class="backup-tools"><button class="iconbtn backup-open" id="backupBtn" type="button">Backup</button>
-    <button class="iconbtn" id="addBtn" aria-label="Add script">
+    <button class="iconbtn backup-open" id="readingBtn" type="button">Reading</button><button class="iconbtn" id="addBtn" aria-label="Add script">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
     </button>
     </div>
   </header>
   <div id="storageWarning" role="alert" hidden></div>
 
+  <div id="libraryNav" class="library-tools" hidden><button class="chip" data-screen="browse">All scripts</button><button class="chip" data-screen="flow">By call stage</button><button class="chip" data-screen="obj">Objections</button><button class="chip" data-screen="search">Search</button></div>
   <main>
+    <section class="screen" id="s-call"><div id="callHome"></div></section>
     <!-- BROWSE -->
     <section class="screen active" id="s-browse">
-      <div class="eyebrow">Start a call</div><div class="quickcalls" id="quickCalls"></div><div class="chips" id="catChips"></div>
+      <div class="section-label"><span class="eyebrow">Your script library</span></div><div class="quickcalls" id="quickCalls" hidden></div><div class="chips" id="catChips"></div>
       <div id="browseList"></div>
       <div class="foot"><div class="nm">Mark Allen</div><div class="meta">CA DRE# 01933129 · Founder &amp; Chief Operator</div></div>
     </section>
@@ -328,7 +348,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     <!-- DRILL -->
     <section class="screen" id="s-drill">
       <div class="section-label"><span class="eyebrow">Training</span><span class="line"></span></div>
-      <div class="statrow">
+      <div id="practiceTools"></div><div class="statrow">
         <div class="stat"><div class="n accent" id="stStreak">0</div><div class="l">Day Streak</div></div>
         <div class="stat"><div class="n accent" id="stReps">0%</div><div class="l">Self-rated mastery</div></div>
         <div class="stat"><div class="n" id="stWeak">0</div><div class="l">To Drill</div></div>
@@ -371,13 +391,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     </section>
   </main>
 
-  <nav class="tabbar">
-    <button class="tab on" data-screen="browse"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg><span>Browse</span></button>
-    <button class="tab" data-screen="flow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg><span>Flow</span></button>
-    <button class="tab" data-screen="drill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="0.5" fill="currentColor"/></svg><span>Drill</span></button>
-    <button class="tab" data-screen="obj"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z"/></svg><span>Objections</span></button>
-    <button class="tab" data-screen="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><span>Search</span></button>
-  </nav>
+  <nav class="tabbar" aria-label="Main activities"><button class="tab" data-screen="call"><span>Call</span></button><button class="tab" data-screen="drill"><span>Practice</span></button><button class="tab" data-screen="browse"><span>Library</span></button></nav>
 </div>
 
 <!-- OVERLAY -->
@@ -756,14 +770,14 @@ const LS = {
   streak:'vault.streak.v1'
 };
 function load(key,fallback){ try{const v=localStorage.getItem(key);return v?JSON.parse(v):fallback;}catch(e){return fallback;} }
-function save(key,val){ try{localStorage.setItem(key,JSON.stringify(val));}catch(e){reportStorageError();throw new Error('Change was not saved.');} }
+function save(key,val){ try{localStorage.setItem(key,JSON.stringify(val));markExportDirty();}catch(e){reportStorageError();throw new Error('Change was not saved.');} }
 
 let scripts = [], scores = []; // Initialized only after interrupted-restore recovery.
 
 /* ---------- IndexedDB for audio takes ---------- */
-async function putTake(t){return vaultTransaction('vaultTakes','takes','readwrite',store=>store.put(t));}
+async function putTake(t){const result=await vaultTransaction('vaultTakes','takes','readwrite',store=>store.put(t));markExportDirty();return result;}
 async function getTakes(scriptId){return vaultTransaction('vaultTakes','takes','readonly',(store,done)=>{const req=store.getAll();req.onsuccess=()=>done(req.result.filter(t=>!scriptId||t.scriptId===scriptId).sort((a,b)=>b.date-a.date));});}
-async function delTake(id){return vaultTransaction('vaultTakes','takes','readwrite',store=>store.delete(id));}
+async function delTake(id){const result=await vaultTransaction('vaultTakes','takes','readwrite',store=>store.delete(id));markExportDirty();return result;}
 async function runVaultAction(action){try{return await action();}catch(error){reportStorageError(error.message || 'Browser storage could not complete this action.');}}
 
 /* ---------- helpers ---------- */
@@ -808,10 +822,11 @@ function openObjectionQuickPull(){
   const handlers=scripts.filter(s=>s.category==='Objection Handler');
   if(!handlers.length){openOverlay('OBJECTION','<div class="empty">No objection handlers yet.</div>');return;}
   function list(){
-    const html=`<div class="ov-title">Objection — pull the line</div>
+    const html=`<div class="ov-title">Objection — pull the line</div><div class="field"><label for="objFind">What did they say?</label><input id="objFind" placeholder="e.g. staying put"/></div><p id="objEmpty" hidden>No matching handler. Try another phrase.</p>
       <p style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.5">Mid-call? Tap what they just said, read the move, then tap back and keep going.</p>
       ${handlers.map(s=>`<button class="tile" data-oid="${s.id}"><div class="ico" style="color:var(--red);border-color:rgba(239,68,68,.4)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z"/></svg></div><div><h4>${esc(s.prompt||s.objection||s.title)}</h4><p>${esc(s.title)}</p></div><div class="arrow">›</div></button>`).join('')}`;
     openOverlay('OBJECTION',html);
+    $('#objFind').oninput=()=>{let count=0;ovBody.querySelectorAll('[data-oid]').forEach(b=>{b.hidden=!matchesScript(scripts.find(x=>x.id===b.dataset.oid),$('#objFind').value);if(!b.hidden)count++;});$('#objEmpty').hidden=count>0;};
     ovBody.querySelectorAll('[data-oid]').forEach(b=>b.onclick=()=>detail(scripts.find(x=>x.id===b.dataset.oid)));
   }
   function detail(s){
@@ -837,13 +852,13 @@ function cardHTML(s){
   if(s.objection) badges.push(`<span class="badge b-obj">${esc(s.objection)}</span>`);
   return `<div class="card" data-id="${s.id}">
     <div class="top"><h3>${esc(s.title)}</h3></div>
-    <div class="card-start">${(s.category==='Call Flow'||s.category==='Appointment Close')?'<button class="act primary" data-do="start">Start call</button>':''}<button class="act" data-do="edit">Edit script</button></div>
+    <div class="card-start">${(s.category==='Call Flow'||s.category==='Appointment Close')?'<button class="act primary" data-do="start">Start call</button>':''}<button class="act" data-do="favorite" aria-pressed="${!!s.favorite}">${s.favorite?'★ Pinned':'☆ Pin'}</button><button class="act" data-do="edit">Edit script</button></div><details class="script-details" ${uiPrefs.openCards?.includes(s.id)?'open':' '}><summary>Read script and tools</summary>
     <div class="badges">${badges.join('')}</div>
     <div class="mastery" data-id="${s.id}">${masteryDotsHTML(s)}</div>
     ${s.whenToUse?`<div class="whenuse">${esc(s.whenToUse)}</div>`:''}
-    <div class="scripttext">${styleScriptText(s.text)}</div>
+    <div class="variant-controls">${s.shortText?'<button class="act" data-variant="full">Full version</button> <button class="act" data-variant="short">Short version</button>':''}</div><div class="scripttext" data-script-body>${styleScriptText(s.text)}</div>
     ${s.principle?`<div class="principle"><b>Why it works:</b> ${esc(s.principle)}</div>`:''}
-    <div class="actions">
+    <div class="actions"><button class="act" data-do="targets">Practice sections / cues</button><button class="act" data-do="compare">Compare takes</button>
       <button class="act primary" data-do="copy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="1"/><path d="M5 15V5a1 1 0 0 1 1-1h10"/></svg>Copy</button>
       <button class="act rec" data-do="rec"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5" fill="currentColor" stroke="none"/></svg>Record</button>
       <button class="act" data-do="takes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M5 12l4-4M5 12l4 4"/></svg>Takes <span class="tc"></span></button>
@@ -852,15 +867,21 @@ function cardHTML(s){
       <button class="act" data-do="pace"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 4l13 8-13 8z" fill="currentColor" stroke="none"/></svg>Pace</button>
       ${(s.category==='Call Flow'||s.category==='Appointment Close')?`<button class="act live" data-do="live"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.81.36 1.6.7 2.34a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.74-1.74a2 2 0 0 1 2.11-.45c.74.34 1.53.57 2.34.7A2 2 0 0 1 22 16.92z"/></svg>Live Call</button>`:''}
     </div>
-    <div class="takes"></div>
+    <div class="takes"></div></details>
   </div>`;
 }
 
 function attachCard(card){
   const id=card.dataset.id; const s=scripts.find(x=>x.id===id);
   card.querySelector('[data-do="edit"]').onclick=()=>openForm(s);
+  card.querySelector('[data-do="favorite"]').onclick=e=>{s.favorite=!s.favorite;save(LS.scripts,scripts);e.currentTarget.textContent=s.favorite?'★ Pinned':'☆ Pin';e.currentTarget.setAttribute('aria-pressed',s.favorite);};
+  let wasOpen=card.querySelector('details').open;
+  card.querySelector('details').ontoggle=e=>{const open=e.currentTarget.open;if(open===wasOpen)return;wasOpen=open;uiPrefs.openCards=[...new Set([...(uiPrefs.openCards||[]).filter(id=>id!==s.id),...(open?[s.id]:[])])];writePrefs();if(open)touchedScript(s);};
+  card.querySelector('[data-do="targets"]').onclick=()=>openTargets(s);
+  card.querySelector('[data-do="compare"]').onclick=()=>runVaultAction(()=>openComparison(s));
+  card.querySelectorAll('[data-variant]').forEach(b=>b.onclick=()=>{card.dataset.variant=b.dataset.variant;card.querySelector('[data-script-body]').innerHTML=styleScriptText(b.dataset.variant==='short'?s.shortText:s.text);});
   const start=card.querySelector('[data-do="start"]');if(start)start.onclick=()=>openLiveCall(s,true);
-  card.querySelector('[data-do="copy"]').onclick=()=>copyText(s.text);
+  card.querySelector('[data-do="copy"]').onclick=()=>copyText(card.dataset.variant==='short'?s.shortText:s.text);
   card.querySelector('[data-do="rec"]').onclick=(e)=>toggleRecord(s,e.currentTarget,card);
   card.querySelector('[data-do="takes"]').onclick=()=>runVaultAction(()=>toggleTakes(s,card));
   card.querySelector('[data-do="memorize"]').onclick=()=>openFade(s);
@@ -931,7 +952,7 @@ function updateStats(){
 }
 
 /* ---------- screen renders ---------- */
-let activeCat='All';
+let activeCat=load('vault.ui.v1',{}).category||'All';
 function renderBrowse(){
   $('#quickCalls').innerHTML=scripts.filter(s=>s.category==='Call Flow').map(s=>'<button class="chip" data-call="'+esc(s.id)+'">'+esc(s.leadType||s.title)+'</button>').join('');
   $('#quickCalls').querySelectorAll('[data-call]').forEach(b=>b.onclick=()=>openLiveCall(scripts.find(s=>s.id===b.dataset.call),true));
@@ -963,26 +984,13 @@ function renderObj(){
 function renderSearch(q){
   const list=$('#searchList'); const term=(q||'').trim().toLowerCase();
   if(!term){list.innerHTML='<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><div>Type to search across every script — words, objections, lead types.</div></div>';return;}
-  const items=scripts.filter(s=>(s.title+' '+s.text+' '+s.category+' '+(s.objection||'')+' '+(s.leadType||'')+' '+(s.whenToUse||'')).toLowerCase().includes(term));
+  const items=scripts.filter(s=>matchesScript(s,term));
   list.innerHTML=items.length?items.map(cardHTML).join(''):'<div class="empty">No scripts match that. Try a different word.</div>';
   list.querySelectorAll('.card').forEach(attachCard);
 }
 
 /* ---------- navigation ---------- */
-function show(screen){
-  if(!recordingNavigationAllowed())return;
-  $('#objFab').style.display=screen==='drill'?'none':'';
-  $$('.screen').forEach(s=>s.classList.remove('active'));
-  $('#s-'+screen).classList.add('active');
-  $$('.tab').forEach(t=>t.classList.toggle('on',t.dataset.screen===screen));
-  if(screen==='browse')renderBrowse();
-  if(screen==='flow')renderFlow();
-  if(screen==='obj')renderObj();
-  if(screen==='drill')updateStats();
-  if(screen==='search'){renderSearch($('#searchInput').value);$('#searchInput').focus();}
-  window.scrollTo(0,0);
-}
-$$('.tab').forEach(t=>t.onclick=()=>show(t.dataset.screen));
+$$('[data-screen]').forEach(t=>t.onclick=()=>show(t.dataset.screen));
 $('#searchInput').addEventListener('input',e=>renderSearch(e.target.value));
 
 /* ---------- overlay framework ---------- */
@@ -991,8 +999,8 @@ let overlayReturnFocus=null;
 function recordingNavigationAllowed(){if(recordingPending||mediaRecorder){toast('Stop recording and wait for it to save before leaving this screen.');return false;}return true;}
 document.addEventListener('click',e=>{if(!recordingPending&&!mediaRecorder)return;const button=e.target.closest('button');if(button&&(button.matches('[data-do="rec"],#fadeRec,#ambRec')))return;e.preventDefault();e.stopImmediatePropagation();toast('Stop recording and wait for it to save before leaving this screen.');},true);
 window.addEventListener('beforeunload',e=>{if(recordingPending||mediaRecorder){e.preventDefault();e.returnValue='';}});
-function openOverlay(kicker,html){if(!ov.classList.contains('show'))overlayReturnFocus=document.activeElement;ovKicker.textContent=kicker;ovBody.innerHTML=html;ov.classList.add('show');ovBody.scrollTop=0;document.querySelector('#app')?.setAttribute('inert','');$('#objFab').setAttribute('inert','');$('#ovClose').focus();}
-function closeOverlay(){if(backupBusy||!recordingNavigationAllowed())return;ov.classList.remove('show');ovBody.innerHTML='';clearTimeout(paceTimer);document.querySelector('#app')?.removeAttribute('inert');$('#objFab').removeAttribute('inert');if(overlayReturnFocus?.isConnected)overlayReturnFocus.focus();}
+function openOverlay(kicker,html){if(overlayCleanup){overlayCleanup();overlayCleanup=null;}if(!ov.classList.contains('show'))overlayReturnFocus=document.activeElement;ovKicker.textContent=kicker;ovBody.innerHTML=html;ov.classList.add('show');ovBody.scrollTop=0;document.querySelector('#app')?.setAttribute('inert','');$('#objFab').setAttribute('inert','');$('#ovClose').textContent='Back to '+(navNames[currentScreen]||'Library');$('#ovClose').focus();}
+function closeOverlay(){if(backupBusy||!recordingNavigationAllowed())return;if(overlayCleanup){overlayCleanup();overlayCleanup=null;}ov.classList.remove('show');ovBody.innerHTML='';clearTimeout(paceTimer);if(currentScreen==='call')renderCallHome();document.querySelector('#app')?.removeAttribute('inert');$('#objFab').removeAttribute('inert');if(overlayReturnFocus?.isConnected)overlayReturnFocus.focus();}
 $('#ovClose').onclick=closeOverlay;
 document.addEventListener('keydown',e=>{if(!ov.classList.contains('show'))return;if(e.key==='Escape'){e.preventDefault();closeOverlay();}if(e.key==='Tab'){const items=[...ov.querySelectorAll('button,input,select,textarea,[tabindex="0"]')].filter(x=>!x.disabled&&x.getClientRects().length);const first=items[0],last=items.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus();}}});
 new MutationObserver(()=>{if(!ov.classList.contains('show')){document.querySelector('#app')?.removeAttribute('inert');$('#objFab').removeAttribute('inert');}}).observe(ov,{attributes:true,attributeFilter:['class']});
@@ -1000,6 +1008,7 @@ new MutationObserver(()=>{if(!ov.classList.contains('show')){document.querySelec
 /* ---------- Memorization Fade ---------- */
 function openFade(s){
   if(!recordingNavigationAllowed())return;
+  touchedScript(s);
   const words=s.text.split(/(\s+)/);
   const html=`<div class="ov-title">${esc(s.title)}</div>
     <div class="slider-wrap"><label>Hide level — <span id="fadePct">0%</span></label><input type="range" id="fadeSlider" min="0" max="100" value="0"/></div>
@@ -1047,6 +1056,7 @@ async function fadeRecord(s,btn){
 /* ---------- Pacing / Teleprompter (#1) ---------- */
 function openPacer(s){
   if(!recordingNavigationAllowed())return;
+  touchedScript(s);
   clearTimeout(paceTimer);
   const SPEEDS={slow:1.7,med:2.4,fast:3.2};
   let wps=SPEEDS.med, playing=true, i=0;
@@ -1132,10 +1142,11 @@ function parseSteps(text){
 function openLiveCall(s,skipPreparation=false){
   if(!recordingNavigationAllowed())return;
   clearTimeout(paceTimer);
+  touchedScript(s);const fields={name:'',street:'',outcome:''};let shortVersion=false;
   const parsed=parseSteps(s.text);
   let steps=parsed.steps;
   if(!steps.length) steps=[{label:s.title, body:[s.text]}];
-  const intro=parsed.intro, n=steps.length;
+  const intro=parsed.intro;let n=steps.length;
   let idx=0;
   const TON=[
     'Slow down -- calm beats eager.',
@@ -1157,12 +1168,16 @@ function openLiveCall(s,skipPreparation=false){
     ovBody.querySelectorAll('.lc-check').forEach(b=>b.onclick=()=>b.classList.toggle('armed'));
     $('#lcStart').onclick=()=>{ idx=0; step(); };
   }
+  function setup(){openOverlay('CALL DETAILS',`<div class="ov-title">Personalize this call</div><p>Temporary details only. They are not saved, backed up, or sent anywhere.</p><div class="field"><label for="callName">First name</label><input id="callName" autocomplete="off" value="${esc(fields.name)}"/></div><div class="field"><label for="callStreet">Street</label><input id="callStreet" autocomplete="off" value="${esc(fields.street)}"/></div><div class="field"><label for="callOutcome">Desired outcome</label><input id="callOutcome" autocomplete="off" value="${esc(fields.outcome)}"/></div><button class="bigbtn solid" id="callApply">Apply and return to call</button><button class="bigbtn ghost" id="callClear">Clear details</button>`);$('#callApply').onclick=()=>{fields.name=$('#callName').value.trim();fields.street=$('#callStreet').value.trim();fields.outcome=$('#callOutcome').value.trim();step();};$('#callClear').onclick=()=>{fields.name=fields.street=fields.outcome='';step();};}
   function step(){
     const st=steps[idx], last=idx===n-1;
     const body=(Array.isArray(st.body)?st.body.join('\n'):st.body).trim();
     const html=`<div class="lc-top"><span class="lc-count">STEP ${idx+1} / ${n}</span><button class="lc-restart" id="lcPre">tonality</button></div>
+      <div class="call-controls"><label for="callJump">Jump to step</label><select id="callJump">${steps.map((x,i)=>`<option value="${i}" ${i===idx?'selected':''}>${esc(x.label)}</option>`).join('')}</select><button class="act" id="callSetup">Call details</button><button class="act" id="callReading">Reading</button>${s.shortText?'<button class="act" id="callVariant">'+(shortVersion?'Full version':'Short version')+'</button>':''}</div>
       <div class="lc-name">${esc(st.label)}</div>
-      <div class="lc-body">${styleScriptText(body)}</div>
+      ${s.stepCues?.[st.label]&&!body.split('\n').includes(s.cueAnchors?.[st.label])?'<div class="delivery-cue">Delivery cue: '+esc(s.stepCues[st.label])+'</div>':''}
+      <div class="lc-body">${callBodyWithCues(s,st.label,body,fields)}</div>
+      <button class="act" id="callTarget">Practice this section / edit cue</button><button class="act" id="callEnd">End call / flag practice</button>
       <div class="lc-bar">
         <button class="lc-btn" id="lcBack" ${idx===0?'disabled':''}>‹ Back</button>
         <button class="lc-btn obj" id="lcObj">Objection</button>
@@ -1173,6 +1188,8 @@ function openLiveCall(s,skipPreparation=false){
     $('#lcNext').onclick=()=>{ if(last){ finish(); } else { idx++; step(); } };
     $('#lcObj').onclick=()=>objlist();
     $('#lcPre').onclick=()=>precall();
+    $('#callJump').onchange=()=>{idx=+$('#callJump').value;step();};$('#callSetup').onclick=setup;$('#callReading').onclick=()=>openReading(step);$('#callTarget').onclick=()=>openTargets(s,step);$('#callEnd').onclick=finish;
+    if($('#callVariant'))$('#callVariant').onclick=()=>{shortVersion=!shortVersion;const selected=parseSteps(shortVersion?s.shortText:s.text).steps;steps=selected.length?selected:[{label:s.title,body:[shortVersion?s.shortText:s.text]}];n=steps.length;idx=Math.min(idx,n-1);step();};
   }
   function objlist(){
     const handlers=scripts.filter(x=>x.category==='Objection Handler');
@@ -1188,7 +1205,7 @@ function openLiveCall(s,skipPreparation=false){
     const html=`<button class="bigbtn ghost" id="lcDetBack" style="margin-bottom:14px">‹ Back to objections</button>
       ${o.prompt?`<div class="ambush-prompt"><div class="who">They said</div><div class="said">${esc(o.prompt)}</div></div>`:''}
       <div class="lc-name">${esc(o.title)}</div>
-      <div class="lc-body">${styleScriptText(o.text)}</div>
+      <div class="lc-body">${styleScriptText(substituteCall(o.text,fields))}</div>
       <div class="lc-bar"><button class="lc-btn" id="lcDetBack2">‹ Objections</button><button class="lc-btn next" id="lcDetCall">Back to call ›</button></div>`;
     openOverlay('LIVE',html);
     $('#lcDetBack').onclick=()=>objlist();
@@ -1196,15 +1213,15 @@ function openLiveCall(s,skipPreparation=false){
     $('#lcDetCall').onclick=()=>step();
   }
   function finish(){
-    markPracticed(s);
     const closer = s.id!=='closer' ? scripts.find(x=>x.id==='closer') : null;
     const html=`<div class="ov-title">Call complete</div>
-      <div class="lc-sub">How did your delivery feel?</div>
+      <div class="lc-sub">How did your delivery feel?</div><button class="bigbtn" id="flagCall">Flag a practice need</button>
       <div class="rate-dots" id="lcRate" style="justify-content:center;margin:16px 0 22px"></div>
       <button class="bigbtn solid" id="lcAgain">↻ Run it back</button>
       ${closer?`<button class="bigbtn ghost" id="lcCloser">Go to The Closer -></button>`:''}`;
     openOverlay('LIVE',html);
     renderRateDots('#lcRate',s,(nn)=>{ setMastery(s,nn); toast('Logged -- mastery '+nn+'/5'); });
+    $('#flagCall').onclick=()=>openPostCall(s,finish);
     $('#lcAgain').onclick=()=>{ idx=0; step(); };
     if(closer){ $('#lcCloser').onclick=()=>openLiveCall(closer); }
   }
@@ -1274,7 +1291,7 @@ async function openTakesLibrary(){
 /* ---------- drill tiles ---------- */
 $$('#s-drill .tile').forEach(t=>t.onclick=()=>{
   const m=t.dataset.mode;
-  if(m==='session')openDailySession();
+  if(m==='session')openPracticeSetup();
   else if(m==='queue')openQueue();
   else if(m==='fade-pick')openFadePicker();
   else if(m==='ambush')openAmbush();
@@ -1291,35 +1308,14 @@ function openFadePicker(){
 /* ---------- bounded practice and reversible editing ---------- */
 function localDay(d=new Date()){return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');}
 function currentStreak(st,now=new Date()){const yesterday=new Date(now);yesterday.setDate(yesterday.getDate()-1);return st.last===localDay(now)||st.last===localDay(yesterday)?st.count||0:0;}
-function refreshViews(){renderBrowse();renderFlow();renderObj();renderSearch($('#searchInput').value);updateStats();}
+function refreshViews(){renderBrowse();renderFlow();renderObj();renderSearch($('#searchInput').value);updateStats();if(currentScreen==='call')renderCallHome();}
 function practiceHistory(){return scores.filter(x=>x&&x.kind==='practice-session'&&Array.isArray(x.attempts)&&x.attempts.every(a=>a&&Number.isInteger(a.rating)&&a.rating>=1&&a.rating<=5));}
 function renderPracticeSummary(){
   const el=$('#practiceSummary');if(!el)return;const last=practiceHistory().at(-1);
   el.innerHTML=last?'<p>Last session: '+esc(last.day)+' · '+last.attempts.length+' completed reps. '+esc(last.attempts.filter(a=>a.rating<4).length+' to revisit.')+'</p><details><summary>Review last session</summary>'+last.attempts.map(a=>'<p><b>'+esc(a.title||'Script')+'</b> · '+a.rating+'/5<br>'+esc(a.note||'No improvement note added.')+'</p>').join('')+'</details>':'<p>No completed daily sessions yet. Self-ratings measure confidence, not sales results.</p>';
 }
-function rankPractice(items){return [...items].sort((a,b)=>(a.mastery||0)-(b.mastery||0)||(a.lastPracticed||'').localeCompare(b.lastPracticed||''));}
-function openDailySession(){
-  if(!recordingNavigationAllowed())return;
-  const queue=rankPractice(scripts).slice(0,3);const sessionId=crypto.randomUUID();let pos=0,attempts=[];
-  if(!queue.length){openOverlay('PRACTICE','<p>Add a script to begin.</p>');return;}
-  function render(){
-    const s=queue[pos];let rating=0;
-    openOverlay('DAILY PRACTICE',`<div class="ov-title">${pos+1} of ${queue.length} · ${esc(s.title)}</div><p>Say it aloud from memory, then compare. Rate your recall: 1–3 needs work; 4–5 confident.</p><button class="bigbtn" id="sessionReveal">Reveal script</button><div id="sessionText" hidden class="scripttext">${styleScriptText(s.text)}</div><div class="rate-dots" id="sessionRate"></div><label for="sessionNote">One thing to improve (optional)</label><textarea class="session-note" id="sessionNote" maxlength="500"></textarea><button class="bigbtn solid" id="sessionNext" disabled>Complete rep${pos<queue.length-1?' and continue':''}</button><p class="session-feedback">Only completed reps are saved. You can stop between reps.</p>`);
-    $('#sessionReveal').onclick=()=>{$('#sessionText').hidden=false;$('#sessionReveal').hidden=true;};
-    renderRateDots('#sessionRate',{mastery:0},n=>{rating=n;$('#sessionNext').disabled=false;},()=>{rating=0;$('#sessionNext').disabled=true;});
-    $('#sessionNext').onclick=()=>{
-      const attempt={scriptId:s.id,title:s.title,rating,note:$('#sessionNote').value.trim(),at:new Date().toISOString()};
-      const entry={kind:'practice-session',id:sessionId,day:localDay(),attempts:[...attempts,attempt]};
-      // Persist each completed rep immediately; a closed session never fabricates uncompleted attempts.
-      const next=[...scores.filter(x=>x?.id!==sessionId),entry];save(LS.scores,next);scores=next;setMastery(s,rating);markPracticed(s);attempts.push(attempt);pos++;
-      if(pos<queue.length){render();return;}
-      const weak=attempts.filter(a=>a.rating<4);
-      openOverlay('SESSION COMPLETE',`<div class="ov-title">${attempts.length} reps completed</div><p>${weak.length?'Revisit these scripts next: '+weak.map(a=>esc(a.title)).join(', '):'You rated all three confidently. Try recalling them again in your next session.'}</p>${attempts.map(a=>'<div class="principle"><b>'+esc(a.title)+'</b> · '+a.rating+'/5'+(a.note?'<p>'+esc(a.note)+'</p>':'')+'</div>').join('')}<button class="bigbtn solid" id="sessionDone">Back to training</button>`);
-      $('#sessionDone').onclick=()=>{closeOverlay();show('drill');};
-    };
-  }render();
-}
-const editableScriptFields=['title','category','callStage','tone','leadType','objection','prompt','whenToUse','principle','text'];
+function rankPractice(items){return [...items].sort((a,b)=>Number(!!(b.practiceFlag||b.practiceTargets?.length))-Number(!!(a.practiceFlag||a.practiceTargets?.length))||(a.mastery||0)-(b.mastery||0)||(a.lastPracticed||'').localeCompare(b.lastPracticed||''));}
+const editableScriptFields=['title','category','callStage','tone','leadType','objection','prompt','whenToUse','principle','text','shortText','aliases'];
 function scriptContent(s){return Object.fromEntries(editableScriptFields.map(k=>[k,s[k]||'']));}
 function saveScriptRevision(s,data){const previous={savedAt:new Date().toISOString(),content:scriptContent(s)};s.revisions=[...(Array.isArray(s.revisions)?s.revisions:[]),previous].slice(-10);Object.assign(s,data);}
 function reviewRevision(s){
@@ -1346,13 +1342,14 @@ function openForm(existing){
     <div class="field"><label>Quick-pull wording (optional)</label><input id="fPrompt" value="${esc(s.prompt||'')}" placeholder="What the seller says"/></div>
     <div class="field"><label>When to use</label><input id="fWhen" value="${esc(s.whenToUse)}" placeholder="When do you reach for this?"/></div>
     <div class="field"><label>Script</label><textarea id="fText" placeholder="The actual words…">${esc(s.text)}</textarea></div>
+    <div class="field"><label>Short version (optional)</label><textarea id="fShort" placeholder="A concise alternative">${esc(s.shortText||'')}</textarea></div><div class="field"><label>Search aliases (optional)</label><input id="fAliases" value="${esc(s.aliases||'')}" placeholder="staying put, not moving"/></div>
     <div class="field"><label>Why it works (optional)</label><input id="fWhy" value="${esc(s.principle)}"/></div>
     <button class="bigbtn solid" id="fSave">${existing?'Save changes':'Add to vault'}</button>
     ${existing?.revisions?.length?'<button class="bigbtn ghost" id="fRevert" style="margin-top:10px">Review previous version</button>':''}`;
   openOverlay(existing?'EDIT':'ADD',html);
   $('#fSave').onclick=()=>{
     const data={title:$('#fTitle').value.trim()||'Untitled',category:$('#fCat').value,callStage:$('#fStage').value,tone:$('#fTone').value,leadType:$('#fLead').value.trim(),objection:$('#fObj').value.trim(),whenToUse:$('#fWhen').value.trim(),principle:$('#fWhy').value.trim(),text:$('#fText').value.trim()};
-    data.prompt=$('#fPrompt').value.trim();
+    data.prompt=$('#fPrompt').value.trim();data.shortText=$('#fShort').value.trim();data.aliases=$('#fAliases').value.trim();
     if(!data.text){toast('Add script text before saving.');return;}
     if(existing){saveScriptRevision(existing,data);}
     else{scripts.push({id:'u_'+Date.now(),needsPractice:true,worksWell:false,lastPracticed:null,mastery:0,...data});}
@@ -1361,6 +1358,91 @@ function openForm(existing){
   if(existing?.revisions?.length)$('#fRevert').onclick=()=>reviewRevision(existing);
   ovBody.querySelectorAll('.field').forEach(field=>{const control=field.querySelector('input,select,textarea');if(control)field.querySelector('label').htmlFor=control.id;});
 
+}
+
+/* ---------- workflow add-ons ---------- */
+const UI_KEY='vault.ui.v1', EXPORT_KEY='vault.export-status.v1';
+const uiPrefs=load(UI_KEY,{});let currentScreen='call',overlayCleanup=null,navigationReady=false;
+const navNames={call:'Call',drill:'Practice',browse:'Library',flow:'Library',obj:'Library',search:'Library'};
+function writePrefs(){try{localStorage.setItem(UI_KEY,JSON.stringify(uiPrefs));}catch{toast('Display preferences could not be saved.');}}
+function rememberScreen(){if(!navigationReady)return;uiPrefs.screen=currentScreen;uiPrefs.scroll=uiPrefs.scroll||{};uiPrefs.scroll[currentScreen]=window.scrollY;uiPrefs.category=activeCat;uiPrefs.search=$('#searchInput').value;writePrefs();}
+function show(screen,fromHistory=false){
+  if(!recordingNavigationAllowed()||backupBusy)return;
+  if(!navNames[screen])screen='call';rememberScreen();currentScreen=screen;
+  document.body.dataset.activity=navNames[screen].toLowerCase();
+  $$('.screen').forEach(s=>s.classList.toggle('active',s.id==='s-'+screen));
+  $$('.tab').forEach(t=>t.classList.toggle('on',t.dataset.screen===(navNames[screen]==='Library'?'browse':screen)));
+  $('#objFab').style.display=screen==='call'?'':'none';$('#libraryNav').hidden=navNames[screen]!=='Library';
+  if(screen==='call')renderCallHome();if(screen==='browse')renderBrowse();if(screen==='flow')renderFlow();if(screen==='obj')renderObj();if(screen==='search')renderSearch($('#searchInput').value);if(screen==='drill'){updateStats();renderPracticeTools();}
+  navigationReady=true;uiPrefs.screen=screen;writePrefs();if(!fromHistory&&location.hash!=='#'+screen)history.pushState({screen},'', '#'+screen);
+  requestAnimationFrame(()=>window.scrollTo(0,uiPrefs.scroll?.[screen]||0));
+}
+window.addEventListener('popstate',()=>{if(!recordingNavigationAllowed()||backupBusy){history.pushState({screen:currentScreen},'','#'+currentScreen);return;}if(ov.classList.contains('show'))closeOverlay();show(location.hash.slice(1),true);});
+window.addEventListener('pagehide',rememberScreen);
+function normalizeWords(text){return String(text||'').toLowerCase().replace(/[’']/g,'').replace(/[^a-z0-9]+/g,' ').trim();}
+const defaultAliases={
+  'Not selling':['staying put','not moving','never moving'],
+  'Already have an agent':['working with someone','have a realtor'],
+  'Price concern':['too expensive','lower your fee','commission'],
+  'Too busy right now':['waiting for the market','wait until next year'],
+  'Need family input':['think it over','need time to think']
+};
+function matchesScript(s,query){const phrase=normalizeWords(query),words=phrase.split(' ').filter(Boolean);const aliases=[...(defaultAliases[s.objection]||[]),...(typeof s.aliases==='string'?s.aliases.split(','):[])].map(normalizeWords).filter(Boolean);const text=normalizeWords([s.title,s.text,s.shortText,s.category,s.objection,s.prompt,s.leadType,s.whenToUse,...aliases].join(' '));return words.every(w=>text.includes(w))||aliases.some(a=>phrase.includes(a));}
+function scriptSteps(s){const parsed=parseSteps(s.text);return parsed.steps.length?parsed.steps:[{label:s.title,body:[s.text]}];}
+function substituteCall(text,fields={}){return String(text).replace(/\bJohn\b|\[first name\]|\[street\]|\[their outcome\]/g,token=>({'John':fields.name,'[first name]':fields.name,'[street]':fields.street,'[their outcome]':fields.outcome}[token]||token));}
+function callBodyWithCues(s,label,body,fields){const cue=s.stepCues?.[label],anchor=s.cueAnchors?.[label];if(!cue||!anchor||!body.split('\n').includes(anchor))return styleScriptText(substituteCall(body,fields));return body.split('\n').map(line=>(line===anchor?'<div class="delivery-cue">Delivery cue: '+esc(cue)+'</div>':'')+styleScriptText(substituteCall(line,fields))).join('<br>');}
+function touchedScript(s){s.lastOpened=Date.now();save(LS.scripts,scripts);}
+function scriptTile(s,action='call'){return `<button class="tile" data-open-script="${esc(s.id)}" data-action="${action}"><div><h4>${esc(s.title)}</h4><p>${esc(s.leadType||s.category)}${s.favorite?' · Favorite':''}</p></div><div class="arrow">›</div></button>`;}
+function bindScriptTiles(root){root.querySelectorAll('[data-open-script]').forEach(b=>b.onclick=()=>{const s=scripts.find(x=>x.id===b.dataset.openScript);if(b.dataset.action==='practice')openPracticeSetup([s]);else openLiveCall(s,true);});}
+function renderCallHome(){
+  const flows=scripts.filter(s=>s.category==='Call Flow'||s.category==='Appointment Close');
+  const favorites=scripts.filter(s=>s.favorite);const recent=[...scripts].filter(s=>s.lastOpened).sort((a,b)=>b.lastOpened-a.lastOpened).slice(0,4);
+  $('#callHome').innerHTML=`<div class="section-label"><span class="eyebrow">Ready for your next conversation</span></div><h1>Make the next call.</h1><p class="session-feedback">Choose a flow. Your script, objections, and next step stay together.</p><div class="quickcalls">${flows.map(s=>`<button class="chip" data-open-script="${esc(s.id)}">${esc(s.leadType||s.title)}</button>`).join('')}</div><button class="bigbtn" id="callFind">Find an objection by what they said</button><div class="home-columns"><section><h2>Favorites</h2>${favorites.length?favorites.map(s=>scriptTile(s)).join(''):'<p class="session-feedback">Pin scripts from Library to keep them here.</p>'}</section><section><h2>Recently opened</h2>${recent.length?recent.map(s=>scriptTile(s)).join(''):'<p class="session-feedback">Your recently opened scripts will appear here.</p>'}</section></div><div id="exportReminder" class="principle"></div>`;
+  bindScriptTiles($('#callHome'));$('#callFind').onclick=openObjectionQuickPull;renderExportReminder();
+}
+function markExportDirty(){try{const status=load(EXPORT_KEY,{});status.dirty=true;localStorage.setItem(EXPORT_KEY,JSON.stringify(status));}catch{} }
+function recordExportRequest(envelope){try{localStorage.setItem(EXPORT_KEY,JSON.stringify({at:new Date().toISOString(),sha256:envelope.sha256,dirty:false}));}catch{}renderExportReminder();}
+function renderExportReminder(){const el=$('#exportReminder');if(!el)return;const status=load(EXPORT_KEY,{});el.innerHTML=`<b>Backup status</b><p>${status.at?'Last download requested: '+esc(new Date(status.at).toLocaleString())+'. '+(status.dirty?'Changes since that request.':'No tracked changes since that request.'):'No backup download requested on this device yet.'} Check the saved file in Downloads; a request is not proof of a completed backup.</p><button class="act" id="reminderBackup">Open Backup</button>`;$('#reminderBackup').onclick=openBackup;}
+function applyReading(){const size=[16,20,24,28].includes(+uiPrefs.fontSize)?+uiPrefs.fontSize:20;const leading=[1.5,1.8,2.1].includes(+uiPrefs.lineHeight)?+uiPrefs.lineHeight:1.8;document.documentElement.style.setProperty('--reading-size',size+'px');document.documentElement.style.setProperty('--reading-leading',leading);document.body.classList.toggle('focus-reading',!!uiPrefs.focusReading);}
+function openReading(back){openOverlay('READING',`<div class="ov-title">Comfortable reading</div><div class="field"><label for="readingSize">Script text size</label><select id="readingSize">${[16,20,24,28].map(n=>`<option value="${n}" ${n===(+uiPrefs.fontSize||20)?'selected':''}>${n}px</option>`).join('')}</select></div><div class="field"><label for="readingSpace">Line spacing</label><select id="readingSpace">${[1.5,1.8,2.1].map(n=>`<option value="${n}" ${n===(+uiPrefs.lineHeight||1.8)?'selected':''}>${n}</option>`).join('')}</select></div><label class="backup-confirm"><input id="readingFocus" type="checkbox" ${uiPrefs.focusReading?'checked':''}>Focus view — hide library coaching and metadata</label><p class="scripttext">Pause. Ask one question, then listen.</p><button id="readingDone" class="bigbtn solid">Save and return</button>`);$('#readingDone').onclick=()=>{uiPrefs.fontSize=+$('#readingSize').value;uiPrefs.lineHeight=+$('#readingSpace').value;uiPrefs.focusReading=$('#readingFocus').checked;writePrefs();applyReading();back?back():closeOverlay();};}
+function openTargets(s,back){
+  const steps=scriptSteps(s);const selected=new Set(Array.isArray(s.practiceTargets)?s.practiceTargets:[]);
+  openOverlay('PRACTICE TARGETS',`<div class="ov-title">${esc(s.title)}</div><p>Choose the exact sections to practice. Delivery cues are reminders, not words to say.</p>${steps.map((st,i)=>`<div class="field"><label class="backup-confirm"><input type="checkbox" data-target="${i}" ${selected.has(st.label)?'checked':''}>${esc(st.label)}</label><label for="cue${i}">Delivery cue</label><input id="cue${i}" maxlength="250" value="${esc(s.stepCues?.[st.label]||'')}" placeholder="Pause here, slow down…"><label for="cueLine${i}">Show cue before</label><select id="cueLine${i}"><option value="">Entire section</option>${st.body.filter(line=>line.trim()).map(line=>`<option value="${esc(line)}" ${s.cueAnchors?.[st.label]===line?'selected':''}>${esc(line)}</option>`).join('')}</select></div>`).join('')}<button class="bigbtn solid" id="saveTargets">Save targets and cues</button><button class="bigbtn ghost" id="cancelTargets">Back without changes</button>`);
+  $('#cancelTargets').onclick=()=>back?back():closeOverlay();
+  $('#saveTargets').onclick=()=>{s.practiceTargets=[...ovBody.querySelectorAll('[data-target]:checked')].map(c=>steps[+c.dataset.target].label);s.stepCues=Object.fromEntries(steps.map((st,i)=>[st.label,$('#cue'+i).value.trim()]));s.cueAnchors=Object.fromEntries(steps.map((st,i)=>[st.label,$('#cueLine'+i).value]));save(LS.scripts,scripts);toast('Practice targets saved');back?back():closeOverlay();};
+}
+function openPostCall(s,back){openOverlay('AFTER THE CALL',`<div class="ov-title">What should you practice next?</div><p>Save a skill reminder only. Client details and follow-up belong in Follow Up Boss.</p><div class="field"><label for="postNote">What challenged you?</label><textarea id="postNote" maxlength="500" placeholder="I rushed discovery or struggled with the fee objection">${esc(s.practiceNote||'')}</textarea></div><button class="bigbtn solid" id="postSave">Flag for practice</button><button class="bigbtn" id="postSections">Choose a specific section</button><button class="bigbtn ghost" id="postClear">Clear practice flag</button><button class="bigbtn ghost" id="postBack">Return to call summary</button>`);$('#postSave').onclick=()=>{s.practiceNote=$('#postNote').value.trim();s.practiceFlag=true;save(LS.scripts,scripts);toast('Added to practice priorities');back();};$('#postSections').onclick=()=>openTargets(s,()=>openPostCall(s,back));$('#postClear').onclick=()=>{s.practiceFlag=false;s.practiceNote='';save(LS.scripts,scripts);back();};$('#postBack').onclick=back;}
+function packScripts(flow){return [flow,...scripts.filter(s=>s.id!==flow.id&&(s.category==='Appointment Close'||(s.category==='Objection Handler'&&(!s.leadType||s.leadType===flow.leadType))))];}
+function renderPracticeTools(){const root=$('#practiceTools');root.innerHTML='<div class="quickcalls"><button class="chip" id="timedPractice">Timed practice</button><button class="chip" id="practicePacks">Call-type packs</button><button class="chip" id="compareTakes">Compare recordings</button></div>';$('#timedPractice').onclick=()=>openPracticeSetup();$('#practicePacks').onclick=openPacks;$('#compareTakes').onclick=()=>runVaultAction(()=>openComparePicker());}
+function openPacks(){const flows=scripts.filter(s=>s.category==='Call Flow');openOverlay('PRACTICE PACKS','<div class="ov-title">Train for a call type</div><p>Each pack includes the call flow, applicable shared objections, and closing language.</p>'+flows.map(s=>`<button class="tile" data-pack="${esc(s.id)}"><div><h4>${esc(s.leadType||s.title)}</h4><p>${packScripts(s).length} scripts</p></div><div class="arrow">›</div></button>`).join('')+'<button class="bigbtn ghost" id="packsBack">Back to Practice</button>');ovBody.querySelectorAll('[data-pack]').forEach(b=>b.onclick=()=>{const flow=scripts.find(s=>s.id===b.dataset.pack);openPracticeSetup(packScripts(flow),flow.leadType||flow.title);});$('#packsBack').onclick=closeOverlay;}
+function openPracticeSetup(pool=scripts,label='Daily practice'){
+  if(!recordingNavigationAllowed())return;
+  openOverlay('PRACTICE SETUP',`<div class="ov-title">${esc(label)}</div><p>Flagged sections come first, then your weakest and oldest practice.</p><div class="field"><label for="sessionDuration">Session length</label><select id="sessionDuration"><option value="0">Three focused reps</option><option value="3">3 minutes</option><option value="5">5 minutes</option><option value="10">10 minutes</option></select></div><details><summary>Included scripts (${pool.length})</summary>${pool.map(s=>'<p>'+esc(s.title)+'</p>').join('')}</details><button class="bigbtn solid" id="beginSession">Start practice</button><button class="bigbtn ghost" id="setupBack">Back to Practice</button>`);
+  $('#beginSession').onclick=()=>openDailySession(pool,+$('#sessionDuration').value);$('#setupBack').onclick=closeOverlay;
+}
+function buildPracticeQueue(pool){return rankPractice(pool).flatMap(s=>{const targets=scriptSteps(s).filter(st=>Array.isArray(s.practiceTargets)&&s.practiceTargets.includes(st.label));return targets.length?targets.map(st=>({script:s,label:st.label,text:st.body.join('\n'),target:true})):[{script:s,label:s.title,text:s.text,target:false}];});}
+function openDailySession(pool=scripts,minutes=0){
+  if(!recordingNavigationAllowed())return;
+  const candidates=buildPracticeQueue(pool),queue=minutes?candidates:candidates.slice(0,3),id=crypto.randomUUID();let pos=0,attempts=[];const deadline=Date.now()+minutes*60000;
+  if(!queue.length){openOverlay('PRACTICE','<p>Add a script to begin.</p>');return;}
+  function finish(){openOverlay('SESSION COMPLETE',`<div class="ov-title">${attempts.length} reps completed</div><p>${attempts.length?'Review your notes, then revisit any section rated below 4.':'No completed reps were saved. Come back when you are ready.'}</p>${attempts.map(a=>'<div class="principle"><b>'+esc(a.title)+'</b> · '+a.rating+'/5<p>'+esc(a.note||'')+'</p></div>').join('')}<button class="bigbtn solid" id="sessionDone">Back to Practice</button>`);$('#sessionDone').onclick=()=>{closeOverlay();show('drill');};}
+  function render(){const item=queue[pos%queue.length],s=item.script;let rating=0;
+    openOverlay('DAILY PRACTICE',`<div class="ov-title">${minutes?'Rep '+(pos+1):(pos+1)+' of '+queue.length} · ${esc(item.label)}</div>${item.target?'<p>Targeted section · '+esc(s.title)+'</p>':''}<p id="sessionClock" role="timer"></p><p>Say it aloud, compare, then rate your recall. 1–3 needs work; 4–5 confident.</p>${s.practiceNote?'<div class="principle">Your focus: '+esc(s.practiceNote)+'</div>':''}<button class="bigbtn" id="sessionReveal">Reveal script</button><div id="sessionText" hidden class="scripttext">${styleScriptText(item.text)}</div><div class="rate-dots" id="sessionRate"></div><label for="sessionNote">One thing to improve (optional)</label><textarea class="session-note" id="sessionNote" maxlength="500"></textarea><button class="bigbtn solid" id="sessionNext" disabled>Complete rep${minutes||pos<queue.length-1?' and continue':''}</button><button class="bigbtn ghost" id="endSession">End session and review</button><p>Only completed reps are saved.</p>`);
+    const updateClock=()=>{if(!minutes)return;const left=Math.max(0,Math.ceil((deadline-Date.now())/1000));$('#sessionClock').textContent=left?Math.floor(left/60)+':'+String(left%60).padStart(2,'0')+' remaining':'Time is up. Finish this rep or end your session.';};updateClock();if(minutes){const timer=setInterval(updateClock,1000);overlayCleanup=()=>clearInterval(timer);}
+    $('#sessionReveal').onclick=()=>{$('#sessionText').hidden=false;$('#sessionReveal').hidden=true;};
+    renderRateDots('#sessionRate',{mastery:0},n=>{rating=n;$('#sessionNext').disabled=false;},()=>{rating=0;$('#sessionNext').disabled=true;});
+    $('#endSession').onclick=finish;
+    $('#sessionNext').onclick=()=>{const a={scriptId:s.id,title:item.label,section:item.target?item.label:null,rating,note:$('#sessionNote').value.trim(),at:new Date().toISOString()};const next=[...scores.filter(x=>x?.id!==id),{kind:'practice-session',id,day:localDay(),attempts:[...attempts,a]}];save(LS.scores,next);scores=next;if(!item.target)setMastery(s,rating);markPracticed(s);attempts.push(a);pos++;if((minutes&&Date.now()<deadline)||(!minutes&&pos<queue.length))render();else finish();};
+  }render();
+}
+async function openComparePicker(){if(!recordingNavigationAllowed())return;const takes=await getTakes(null);const available=scripts.filter(s=>takes.some(t=>t.scriptId===s.id));openOverlay('COMPARE TAKES','<div class="ov-title">Hear your progress</div>'+ (available.length?available.map(s=>`<button class="tile" data-compare="${esc(s.id)}"><div><h4>${esc(s.title)}</h4><p>${takes.filter(t=>t.scriptId===s.id).length} recordings</p></div></button>`).join(''):'<p>Record practice takes first. Two takes of the same script let you compare earlier and later delivery.</p>')+'<button class="bigbtn ghost" id="compareBack">Back to Practice</button>');ovBody.querySelectorAll('[data-compare]').forEach(b=>b.onclick=()=>runVaultAction(()=>openComparison(scripts.find(s=>s.id===b.dataset.compare))));$('#compareBack').onclick=closeOverlay;}
+async function openComparison(s){
+  const takes=await getTakes(s.id);if(takes.length<2){openOverlay('COMPARE TAKES','<p>Record one more take of '+esc(s.title)+' to compare two recordings.</p><button class="bigbtn" id="compareReturn">Back to recordings</button>');$('#compareReturn').onclick=()=>runVaultAction(openComparePicker);return;}
+  const option=selected=>takes.map(t=>`<option value="${esc(t.id)}" ${t.id===selected?'selected':''}>${esc(fmtDate(t.date))}</option>`).join('');
+  openOverlay('COMPARE TAKES',`<div class="ov-title">${esc(s.title)}</div><div class="compare-grid">${['Earlier','Latest'].map((label,i)=>`<section><label for="takeSelect${i}">${label} take</label><select id="takeSelect${i}">${option(i?takes[0].id:takes.at(-1).id)}</select><audio controls id="compareAudio${i}"></audio></section>`).join('')}</div><p id="compareNotice" role="status"></p><details><summary>Read script alongside recordings</summary><div class="scripttext">${styleScriptText(s.text)}</div></details><div class="field"><label for="comparisonNote">Pacing, confidence, or missed questions</label><textarea id="comparisonNote" maxlength="1000"></textarea></div><button class="bigbtn solid" id="saveComparison">Save comparison note</button><button class="bigbtn ghost" id="comparisonBack">Back to recordings</button>`);
+  let urls=[];const pairKey=()=>$('#takeSelect0').value+'|'+$('#takeSelect1').value;
+  const paint=()=>{urls.forEach(URL.revokeObjectURL);urls=[0,1].map(i=>{const audio=$('#compareAudio'+i);audio.pause();const url=URL.createObjectURL(takes.find(t=>t.id===$('#takeSelect'+i).value).blob);audio.src=url;audio.onplay=()=>$('#compareAudio'+(1-i)).pause();audio.onerror=()=>{$('#compareNotice').textContent='This browser could not play the recording. Try a supported browser; your saved take is unchanged.';};return url;});$('#compareNotice').textContent=$('#takeSelect0').value===$('#takeSelect1').value?'Choose different takes for a useful comparison.':'';$('#comparisonNote').value=s.comparisonNotes?.[pairKey()]||'';};
+  paint();[0,1].forEach(i=>$('#takeSelect'+i).onchange=paint);overlayCleanup=()=>{[0,1].forEach(i=>$('#compareAudio'+i)?.pause());urls.forEach(URL.revokeObjectURL);};$('#saveComparison').onclick=()=>{s.comparisonNotes={...s.comparisonNotes,[pairKey()]:$('#comparisonNote').value.trim()};save(LS.scripts,scripts);toast('Comparison note saved');};$('#comparisonBack').onclick=()=>runVaultAction(openComparePicker);
 }
 
 /* ---------- VAULT backup format and recovery engine ---------- */
@@ -1589,10 +1671,11 @@ function downloadVaultBackup(envelope, recovery = false) {
   setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
 function refreshVaultAfterRestore() {
+  markExportDirty();
   scripts = readStoredJSON(LS.scripts, []); scores = readStoredJSON(LS.scores, []);
   const screen = $('.screen.active')?.id.slice(2) || 'browse';
   if (!scripts.some(s => s.category === activeCat)) activeCat = 'All';
-  show(screen); updateStats();
+  refreshViews(); updateStats();
   $('#app main').inert = false; $('nav.tabbar').inert = false; $('#addBtn').disabled = false; $('#objFab').disabled = false;
   $('#storageWarning').hidden = true;
 }
@@ -1631,7 +1714,7 @@ async function openBackup() {
   finally { setBackupBusy(false); syncControls(); }
   $('#backupExport').onclick = () => {
     if (!current) return;
-    try { downloadVaultBackup(current); backupStatus('Backup download requested. Check that the JSON file appears in your Downloads before closing this page.'); }
+    try { downloadVaultBackup(current); recordExportRequest(current); backupStatus('Backup download requested. Check that the JSON file appears in your Downloads before closing this page.'); }
     catch { backupStatus('The download could not start. Your data has not changed.', true); }
   };
   $('#backupFile').onchange = async event => {
@@ -1687,8 +1770,9 @@ async function bootVault() {
     scripts = readStoredJSON(LS.scripts, null);
     if (scripts === null) { scripts = SEED.map(s=>({worksWell:false,lastPracticed:null,needsPractice:true,mastery:0,...s})); save(LS.scripts,scripts); }
     scores = readStoredJSON(LS.scores, []);
-    renderBrowse(); updateStats();
+    $('#searchInput').value=uiPrefs.search||'';applyReading();renderBrowse();updateStats();
     $('#app main').inert = false; $('nav.tabbar').inert = false; $('#addBtn').disabled = false; $('#backupBtn').disabled = false; $('#objFab').disabled = false;
+    const savedScreen=location.hash.slice(1)||uiPrefs.screen||'call';show(savedScreen,true);
     if (recovered) { const banner = $('#storageWarning'); banner.textContent = 'An interrupted restore was recovered. Your previous saved vault has been restored.'; banner.hidden = false; }
   } catch (error) {
     vaultRecoveryRequired = true;
@@ -1697,7 +1781,7 @@ async function bootVault() {
 }
 
 /* ---------- boot ---------- */
-$('#backupBtn').onclick=openBackup;
+$('#backupBtn').onclick=openBackup;$('#readingBtn').onclick=()=>openReading();
 bootVault();
 $('#objFab').onclick=openObjectionQuickPull;
 </script>

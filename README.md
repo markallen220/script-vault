@@ -70,3 +70,37 @@ node refinements.test.cjs
 Verified: 24 automated tests, browser call entry and objection return, three-rep session and reload persistence, edit and previous-version restoration across reload, keyboard rating and dialog focus containment, and 390px/1440px layout checks. Browser console showed no warnings/errors during those interactions.
 
 Still required before release: real microphone stop/save/navigation verification, audible playback in a normal browser (the earlier in-app player crashed), and a confirmed export of the user's actual working library. Test storage used synthetic or starter content, not the user's working vault. Keep this branch unmerged until those release checks and review are complete.
+
+## Workflow add-ons (unpublished development)
+
+The existing single-file application now groups navigation into **Call / Practice / Library**. Primary actions remain visible; script details and secondary tools expand on demand. Library search, category, scroll position, expanded cards, and the last screen are remembered on this device. Browser Back returns between screens.
+
+Implemented additions:
+
+1. Favorites and recently opened scripts.
+2. Practice targets for individual call sections.
+3. Temporary name, street, and outcome placeholders during an open call; these are never saved or backed up.
+4. Seller-phrase search using default and editable aliases.
+5. Jump directly to a call step, with position retained when returning from an objection.
+6. Two-recording comparison with notes saved for the selected pair.
+7. Backup status showing the last download request and subsequent changes. A request does not prove a file was saved.
+8. Reading size, line spacing, and focus preferences.
+9. Practice packs based on call type, shared objections, and closers.
+10. Optional short versions alongside the existing full script.
+11. Three-, five-, and ten-minute practice sessions, plus the three-rep session.
+12. Delivery cues for a section or an exact line.
+13. Post-call practice flags and skill notes.
+
+All persistent script additions use existing script records and are included in version-1 backups. Device preferences use `vault.ui.v1`; download-request status uses `vault.export-status.v1`. These two device-only records are excluded from backups. No services, paid APIs, dependencies, or CRM records were added. Closing a call clears its temporary personalization. Merely viewing a live call does not count as practice; completed practice reps do. Section ratings do not overwrite whole-script mastery.
+
+Run all three suites:
+
+```sh
+node backup.test.cjs
+node refinements.test.cjs
+node addons.test.cjs
+```
+
+Browser acceptance used disposable starter data: call navigation and personalization, short/full variants, targeted practice, phrases, favorites, flags/cues, reading settings, browser Back and reload persistence, and actual backup export/restore. Comparison selection and note persistence were exercised with two synthetic recordings, then that fixture was removed by restoring the prior test snapshot. Desktop and phone layouts were inspected. Real microphone capture and audible playback remain release checks; the user's actual saved library has not been imported into the preview.
+
+Review order: backup/recovery PR, five-refinements PR, then workflow-addons PR. Keep these drafts unmerged until the user's actual library is safely exported and recording/playback release checks are complete.
