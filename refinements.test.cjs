@@ -29,6 +29,8 @@ test('ratings synchronize the stored practice flags in both directions',()=>{
   vm.runInContext(code.slice(code.indexOf('function setMastery'),code.indexOf('function renderRateDots')),c);
   vm.runInContext('setMastery(s,2)',c);assert.equal(c.s.needsPractice,true);assert.equal(c.s.worksWell,false);
   vm.runInContext('setMastery(s,4)',c);assert.equal(c.s.needsPractice,false);assert.equal(c.s.worksWell,true);
+  c.s.lastPracticed='2026-09-16';c.s.revisions=[{content:{text:'Saved'}}];
+  vm.runInContext('setMastery(s,0)',c);assert.equal(c.s.mastery,0);assert.equal(c.s.worksWell,false);assert.equal(c.s.lastPracticed,'2026-09-16');assert.equal(c.s.revisions.length,1);
 });
 test('revealing an ambush answer does not log practice; explicit rating does',()=>{
   const nodes={};const node=()=>({classList:{add(){}},style:{}});let practiced=0,callback;

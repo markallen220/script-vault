@@ -789,16 +789,18 @@ function styleScriptText(t){
 
 /* ---------- mastery scoring helpers (#5) ---------- */
 function masteryDotsHTML(s){
-  const m=s.mastery||0; let d='<span class="mlabel">SELF-RATED MASTERY</span>';
+  const m=s.mastery||0; let d='<span class="mlabel">SELF-RATED MASTERY'+(m?'':' · NOT RATED')+'</span>';
   for(let i=1;i<=5;i++) d+=`<button type="button" class="dot ${i<=m?'on':''}" data-n="${i}" aria-label="Rate mastery ${i} of 5" aria-pressed="${i===m}">${i}</button>`;
-  return d;
+  return d+`<button type="button" class="act" data-clear-rating ${m?'':'disabled'}>Clear rating</button>`;
 }
 function setMastery(s,n){ s.mastery=n; s.needsPractice=n<4; s.worksWell=n>=4; save(LS.scripts,scripts); updateStats(); }
-function renderRateDots(sel,s,cb){
+function renderRateDots(sel,s,cb,onClear){
   const el=$(sel); if(!el)return; const m=s.mastery||0; let h='';
   for(let i=1;i<=5;i++) h+=`<button type="button" class="dot big ${i<=m?'on':''}" data-n="${i}" aria-label="Rate mastery ${i} of 5" aria-pressed="${i===m}">${i}</button>`;
-  el.innerHTML=h;
-  el.querySelectorAll('.dot').forEach(d=>d.onclick=()=>{const n=+d.dataset.n;el.querySelectorAll('.dot').forEach(x=>{x.classList.toggle('on',+x.dataset.n<=n);x.setAttribute('aria-pressed',+x.dataset.n===n);});cb&&cb(n);});
+  el.innerHTML=h+`<button type="button" class="act" data-clear-rating ${m?'':'disabled'}>Clear rating</button><span data-rating-status role="status">${m?'':'Not rated'}</span>`;
+  const clear=el.querySelector('[data-clear-rating]');
+  el.querySelectorAll('.dot').forEach(d=>d.onclick=()=>{const n=+d.dataset.n;el.querySelectorAll('.dot').forEach(x=>{x.classList.toggle('on',+x.dataset.n<=n);x.setAttribute('aria-pressed',+x.dataset.n===n);});clear.disabled=false;el.querySelector('[data-rating-status]').textContent='';cb&&cb(n);});
+  clear.onclick=()=>{if(onClear)onClear();else{setMastery(s,0);refreshViews();}el.querySelectorAll('.dot').forEach(x=>{x.classList.remove('on');x.setAttribute('aria-pressed','false');});el.querySelector('[data-rating-status]').textContent='Not rated';clear.disabled=true;el.querySelector('.dot')?.focus();};
 }
 /* ---------- objection quick-pull (#2) ---------- */
 function openObjectionQuickPull(){
@@ -845,7 +847,7 @@ function cardHTML(s){
       <button class="act primary" data-do="copy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="1"/><path d="M5 15V5a1 1 0 0 1 1-1h10"/></svg>Copy</button>
       <button class="act rec" data-do="rec"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5" fill="currentColor" stroke="none"/></svg>Record</button>
       <button class="act" data-do="takes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M5 12l4-4M5 12l4 4"/></svg>Takes <span class="tc"></span></button>
-      <button class="act ${needsPractice?'':'on'}" data-do="practice"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>${needsPractice?'Needs work':'Works well'}</button>
+      <button class="act ${needsPractice?'':'on'}" data-do="practice"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>${!s.mastery?'Not rated':needsPractice?'Needs work':'Works well'}</button>
       <button class="act" data-do="memorize"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h10M4 18h6"/></svg>Memorize</button>
       <button class="act" data-do="pace"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 4l13 8-13 8z" fill="currentColor" stroke="none"/></svg>Pace</button>
       ${(s.category==='Call Flow'||s.category==='Appointment Close')?`<button class="act live" data-do="live"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.81.36 1.6.7 2.34a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.74-1.74a2 2 0 0 1 2.11-.45c.74.34 1.53.57 2.34.7A2 2 0 0 1 22 16.92z"/></svg>Live Call</button>`:''}
@@ -866,6 +868,7 @@ function attachCard(card){
   {const lb=card.querySelector('[data-do="live"]'); if(lb)lb.onclick=()=>openLiveCall(s);}
   card.querySelector('[data-do="practice"]').onclick=()=>{openOverlay('SELF-RATING','<div class="ov-title">'+esc(s.title)+'</div><p>1–3: needs work · 4–5: confident. This is your assessment, not a completed practice rep.</p><div id="statusRate" class="rate-dots"></div>');renderRateDots('#statusRate',s,n=>{setMastery(s,n);closeOverlay();refreshViews();});};
   card.querySelectorAll('.mastery .dot').forEach(d=>d.onclick=()=>{const rating=+d.dataset.n;setMastery(s,rating);refreshViews();const current=[...document.querySelectorAll('.screen.active .card')].find(c=>c.dataset.id===s.id);current?.querySelector('[data-n="'+rating+'"]').focus();});
+  card.querySelector('[data-clear-rating]').onclick=()=>{setMastery(s,0);refreshViews();const current=[...document.querySelectorAll('.screen.active .card')].find(c=>c.dataset.id===s.id);current?.querySelector('.dot').focus();toast('Rating cleared — practice history kept');};
   refreshTakeCount(s,card);
 }
 async function refreshTakeCount(s,card){return runVaultAction(async()=>{const t=await getTakes(s.id);const el=card.querySelector('.tc');if(el)el.textContent=t.length?`(${t.length})`:'';});}
@@ -1303,7 +1306,7 @@ function openDailySession(){
     const s=queue[pos];let rating=0;
     openOverlay('DAILY PRACTICE',`<div class="ov-title">${pos+1} of ${queue.length} · ${esc(s.title)}</div><p>Say it aloud from memory, then compare. Rate your recall: 1–3 needs work; 4–5 confident.</p><button class="bigbtn" id="sessionReveal">Reveal script</button><div id="sessionText" hidden class="scripttext">${styleScriptText(s.text)}</div><div class="rate-dots" id="sessionRate"></div><label for="sessionNote">One thing to improve (optional)</label><textarea class="session-note" id="sessionNote" maxlength="500"></textarea><button class="bigbtn solid" id="sessionNext" disabled>Complete rep${pos<queue.length-1?' and continue':''}</button><p class="session-feedback">Only completed reps are saved. You can stop between reps.</p>`);
     $('#sessionReveal').onclick=()=>{$('#sessionText').hidden=false;$('#sessionReveal').hidden=true;};
-    renderRateDots('#sessionRate',{mastery:0},n=>{rating=n;$('#sessionNext').disabled=false;});
+    renderRateDots('#sessionRate',{mastery:0},n=>{rating=n;$('#sessionNext').disabled=false;},()=>{rating=0;$('#sessionNext').disabled=true;});
     $('#sessionNext').onclick=()=>{
       const attempt={scriptId:s.id,title:s.title,rating,note:$('#sessionNote').value.trim(),at:new Date().toISOString()};
       const entry={kind:'practice-session',id:sessionId,day:localDay(),attempts:[...attempts,attempt]};
