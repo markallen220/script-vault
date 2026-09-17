@@ -1,0 +1,8 @@
+# Personal data exports and audio are not source code.
+ALLEN-OS-VAULT-*.json
+*.webm
+*.wav
+*.mp3
+*.ogg
+*.m4a
+private/

@@ -277,6 +277,13 @@ input[type=range]{width:100%;accent-color:var(--accent);}
 .lc-btn:disabled{opacity:.35;}
 .lc-btn.obj{color:#fca5a5;border-color:rgba(239,68,68,.4);background:linear-gradient(135deg,rgba(239,68,68,.14),var(--surface) 70%);flex:1.25;}
 .lc-btn.next{background:var(--accent);color:#06121f;border-color:var(--accent);}
+.backup-tools{display:flex;gap:8px;align-items:center;flex-shrink:0}
+.backup-open{width:auto;padding:0 10px;font-size:12px}
+.backup-help{font-size:13px;color:var(--text2);line-height:1.6;margin:12px 0}
+.backup-confirm{display:flex;align-items:flex-start;gap:10px;margin:18px 0;font-size:13px;line-height:1.5}
+.backup-confirm input{width:20px;height:20px;flex:0 0 auto;margin-top:2px}
+#storageWarning{padding:14px 18px;background:var(--well);color:var(--amber);border-bottom:1px solid var(--amber);font-size:13px}
+button:disabled{cursor:not-allowed;opacity:.5}
 </style>
 </head>
 <body>
@@ -286,10 +293,13 @@ input[type=range]{width:100%;accent-color:var(--accent);}
       <div class="wordmark">ALLEN OS <b>· VAULT</b></div>
       <div class="tagline eyebrow">REVERSE SELLING SCRIPT SYSTEM</div>
     </div>
+    <div class="backup-tools"><button class="iconbtn backup-open" id="backupBtn" type="button">Backup</button>
     <button class="iconbtn" id="addBtn" aria-label="Add script">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
     </button>
+    </div>
   </header>
+  <div id="storageWarning" role="alert" hidden></div>
 
   <main>
     <!-- BROWSE -->
@@ -736,26 +746,21 @@ const LS = {
   streak:'vault.streak.v1'
 };
 function load(key,fallback){ try{const v=localStorage.getItem(key);return v?JSON.parse(v):fallback;}catch(e){return fallback;} }
-function save(key,val){ try{localStorage.setItem(key,JSON.stringify(val));}catch(e){} }
+function save(key,val){ try{localStorage.setItem(key,JSON.stringify(val));}catch(e){reportStorageError();throw new Error('Change was not saved.');} }
 
-let scripts = load(LS.scripts, null);
-if(!scripts){ scripts = SEED.map(s=>({worksWell:false, lastPracticed:null, needsPractice:true, mastery:0, ...s})); save(LS.scripts,scripts); }
-let scores = load(LS.scores, []);
+let scripts = [], scores = []; // Initialized only after interrupted-restore recovery.
 
 /* ---------- IndexedDB for audio takes ---------- */
-let db=null;
-function openDB(){return new Promise((res)=>{ if(db) return res(db); const r=indexedDB.open('vaultTakes',1);
-  r.onupgradeneeded=e=>{const d=e.target.result; if(!d.objectStoreNames.contains('takes')) d.createObjectStore('takes',{keyPath:'id'});};
-  r.onsuccess=e=>{db=e.target.result;res(db);}; r.onerror=()=>res(null); });}
-async function putTake(t){const d=await openDB(); if(!d) return; return new Promise(r=>{const tx=d.transaction('takes','readwrite');tx.objectStore('takes').put(t);tx.oncomplete=()=>r();tx.onerror=()=>r();});}
-async function getTakes(scriptId){const d=await openDB(); if(!d) return []; return new Promise(r=>{const out=[];const tx=d.transaction('takes','readonly');const cur=tx.objectStore('takes').openCursor();cur.onsuccess=e=>{const c=e.target.result;if(c){if(!scriptId||c.value.scriptId===scriptId)out.push(c.value);c.continue();}else r(out.sort((a,b)=>b.date-a.date));};cur.onerror=()=>r(out);});}
-async function delTake(id){const d=await openDB(); if(!d) return; return new Promise(r=>{const tx=d.transaction('takes','readwrite');tx.objectStore('takes').delete(id);tx.oncomplete=()=>r();tx.onerror=()=>r();});}
+async function putTake(t){return vaultTransaction('vaultTakes','takes','readwrite',store=>store.put(t));}
+async function getTakes(scriptId){return vaultTransaction('vaultTakes','takes','readonly',(store,done)=>{const req=store.getAll();req.onsuccess=()=>done(req.result.filter(t=>!scriptId||t.scriptId===scriptId).sort((a,b)=>b.date-a.date));});}
+async function delTake(id){return vaultTransaction('vaultTakes','takes','readwrite',store=>store.delete(id));}
+async function runVaultAction(action){try{return await action();}catch(error){reportStorageError(error.message || 'Browser storage could not complete this action.');}}
 
 /* ---------- helpers ---------- */
 const $=s=>document.querySelector(s);
 const $$=s=>Array.from(document.querySelectorAll(s));
 function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),1600);}
-function esc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function esc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function fmtDate(ts){const d=new Date(ts);return d.toLocaleDateString(undefined,{month:'short',day:'numeric'})+' '+d.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'});}
 function copyText(txt){
   if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(()=>toast('Copied to clipboard')).catch(()=>fallbackCopy(txt));}
@@ -840,7 +845,7 @@ function attachCard(card){
   const id=card.dataset.id; const s=scripts.find(x=>x.id===id);
   card.querySelector('[data-do="copy"]').onclick=()=>copyText(s.text);
   card.querySelector('[data-do="rec"]').onclick=(e)=>toggleRecord(s,e.currentTarget,card);
-  card.querySelector('[data-do="takes"]').onclick=()=>toggleTakes(s,card);
+  card.querySelector('[data-do="takes"]').onclick=()=>runVaultAction(()=>toggleTakes(s,card));
   card.querySelector('[data-do="memorize"]').onclick=()=>openFade(s);
   card.querySelector('[data-do="pace"]').onclick=()=>openPacer(s);
   {const lb=card.querySelector('[data-do="live"]'); if(lb)lb.onclick=()=>openLiveCall(s);}
@@ -852,24 +857,26 @@ function attachCard(card){
   card.querySelectorAll('.mastery .dot').forEach(d=>d.onclick=()=>{const n=+d.dataset.n;setMastery(s,n);card.querySelectorAll('.mastery .dot').forEach(x=>x.classList.toggle('on',+x.dataset.n<=n));toast('Mastery '+n+'/5');});
   refreshTakeCount(s,card);
 }
-async function refreshTakeCount(s,card){const t=await getTakes(s.id);const el=card.querySelector('.tc');if(el)el.textContent=t.length?`(${t.length})`:'';}
+async function refreshTakeCount(s,card){return runVaultAction(async()=>{const t=await getTakes(s.id);const el=card.querySelector('.tc');if(el)el.textContent=t.length?`(${t.length})`:'';});}
 
 async function toggleTakes(s,card){
   const box=card.querySelector('.takes'); if(box.classList.contains('show')){box.classList.remove('show');return;}
   const takes=await getTakes(s.id);
   box.innerHTML = takes.length? takes.map(t=>`<div class="take" data-tid="${t.id}"><span class="when">${fmtDate(t.date)}</span><button data-play>▶ Play</button><button class="del" data-del>Delete</button></div>`).join('') : '<div style="font-size:12px;color:var(--muted);padding:4px 0">No recordings yet. Tap Record to capture a take.</div>';
   box.classList.add('show');
-  box.querySelectorAll('[data-play]').forEach(btn=>btn.onclick=async()=>{const tid=btn.closest('.take').dataset.tid;const all=await getTakes(s.id);const tk=all.find(x=>x.id===tid);if(tk){const url=URL.createObjectURL(tk.blob);const a=new Audio(url);a.play();}});
-  box.querySelectorAll('[data-del]').forEach(btn=>btn.onclick=async()=>{const tid=btn.closest('.take').dataset.tid;await delTake(tid);toast('Take deleted');toggleTakes(s,card);toggleTakes(s,card);refreshTakeCount(s,card);});
+  box.querySelectorAll('[data-play]').forEach(btn=>btn.onclick=()=>runVaultAction(async()=>{const tid=btn.closest('.take').dataset.tid;const all=await getTakes(s.id);const tk=all.find(x=>x.id===tid);if(tk){const url=URL.createObjectURL(tk.blob);const a=new Audio(url);await a.play();}}));
+  box.querySelectorAll('[data-del]').forEach(btn=>btn.onclick=()=>runVaultAction(async()=>{const tid=btn.closest('.take').dataset.tid;await delTake(tid);toast('Take deleted');await toggleTakes(s,card);await toggleTakes(s,card);refreshTakeCount(s,card); }));
 }
 
 /* ---------- recording ---------- */
 let mediaRecorder=null, recChunks=[], recScriptId=null, recBtn=null, recCard=null;
-let paceTimer=null;
+let paceTimer=null, recordingPending=false;
 async function toggleRecord(s,btn,card){
+  if(recordingPending){if(mediaRecorder?.state==='recording')mediaRecorder.stop();return;}
   if(mediaRecorder&&mediaRecorder.state==='recording'){ mediaRecorder.stop(); return; }
   if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){toast('Recording needs a secure (https) connection');return;}
   try{
+    recordingPending=true;
     const stream=await navigator.mediaDevices.getUserMedia({audio:true});
     recChunks=[]; recScriptId=s.id; recBtn=btn; recCard=card;
     mediaRecorder=new MediaRecorder(stream);
@@ -877,15 +884,16 @@ async function toggleRecord(s,btn,card){
     mediaRecorder.onstop=async()=>{
       const blob=new Blob(recChunks,{type:mediaRecorder.mimeType||'audio/webm'});
       stream.getTracks().forEach(t=>t.stop());
-      await putTake({id:'t_'+Date.now(),scriptId:recScriptId,blob,date:Date.now()});
-      btn.classList.remove('recording'); btn.lastChild.textContent='Record';
-      toast('Take saved'); markPracticed(s); if(recCard)refreshTakeCount(s,recCard);
-      mediaRecorder=null;
+      try {
+        await putTake({id:'t_'+Date.now(),scriptId:recScriptId,blob,date:Date.now()});
+        markPracticed(s); toast('Take saved'); if(recCard)refreshTakeCount(s,recCard);
+      } catch(error) { reportStorageError('Recording or practice progress could not be saved. Use Backup before reloading; do not clear browser data.'); }
+      finally { btn.classList.remove('recording'); btn.lastChild.textContent='Record'; mediaRecorder=null; recordingPending=false; }
     };
     mediaRecorder.start();
     btn.classList.add('recording'); btn.lastChild.textContent='Stop';
     toast('Recording — tap Stop when done');
-  }catch(e){ toast('Microphone permission needed'); }
+  }catch(e){ recordingPending=false; toast('Microphone permission needed'); }
 }
 
 /* ---------- practice tracking + streak ---------- */
@@ -961,7 +969,7 @@ $('#searchInput').addEventListener('input',e=>renderSearch(e.target.value));
 /* ---------- overlay framework ---------- */
 const ov=$('#overlay'),ovBody=$('#ovBody'),ovKicker=$('#ovKicker');
 function openOverlay(kicker,html){ovKicker.textContent=kicker;ovBody.innerHTML=html;ov.classList.add('show');ovBody.scrollTop=0;}
-$('#ovClose').onclick=()=>{ov.classList.remove('show');ovBody.innerHTML='';clearTimeout(paceTimer);};
+$('#ovClose').onclick=()=>{if(backupBusy)return;ov.classList.remove('show');ovBody.innerHTML='';clearTimeout(paceTimer);};
 
 /* ---------- Memorization Fade ---------- */
 function openFade(s){
@@ -996,15 +1004,17 @@ function openFade(s){
   renderRateDots('#fadeRate',s,(n)=>{setMastery(s,n);markPracticed(s);toast('Logged — mastery '+n+'/5');setTimeout(()=>ov.classList.remove('show'),350);});
 }
 async function fadeRecord(s,btn){
+  if(recordingPending){if(mediaRecorder?.state==='recording')mediaRecorder.stop();return;}
   if(mediaRecorder&&mediaRecorder.state==='recording'){mediaRecorder.stop();btn.textContent='● Record yourself saying it';return;}
   if(!navigator.mediaDevices){toast('Recording needs https');return;}
   try{
+    recordingPending=true;
     const stream=await navigator.mediaDevices.getUserMedia({audio:true});
     recChunks=[];mediaRecorder=new MediaRecorder(stream);
     mediaRecorder.ondataavailable=e=>{if(e.data.size>0)recChunks.push(e.data);};
-    mediaRecorder.onstop=async()=>{const blob=new Blob(recChunks,{type:mediaRecorder.mimeType||'audio/webm'});stream.getTracks().forEach(t=>t.stop());await putTake({id:'t_'+Date.now(),scriptId:s.id,blob,date:Date.now()});toast('Take saved');markPracticed(s);mediaRecorder=null;btn.textContent='● Record yourself saying it';};
+    mediaRecorder.onstop=async()=>{const blob=new Blob(recChunks,{type:mediaRecorder.mimeType||'audio/webm'});stream.getTracks().forEach(t=>t.stop());try{await putTake({id:'t_'+Date.now(),scriptId:s.id,blob,date:Date.now()});markPracticed(s);toast('Take saved');}catch(error){reportStorageError('Recording or practice progress could not be saved. Use Backup before reloading; do not clear browser data.');}finally{mediaRecorder=null;recordingPending=false;btn.textContent='● Record yourself saying it';}};
     mediaRecorder.start();btn.textContent='■ Stop recording';toast('Recording…');
-  }catch(e){toast('Microphone permission needed');}
+  }catch(e){recordingPending=false;toast('Microphone permission needed');}
 }
 
 /* ---------- Pacing / Teleprompter (#1) ---------- */
@@ -1226,8 +1236,8 @@ async function openTakesLibrary(){
     html+='</div>';
   });
   openOverlay('TAKES',html);
-  ovBody.querySelectorAll('[data-play]').forEach(btn=>btn.onclick=async()=>{const tid=btn.closest('.take').dataset.tid;const tk=all.find(x=>x.id===tid);if(tk){const a=new Audio(URL.createObjectURL(tk.blob));a.play();}});
-  ovBody.querySelectorAll('[data-del]').forEach(btn=>btn.onclick=async()=>{const tid=btn.closest('.take').dataset.tid;await delTake(tid);toast('Deleted');openTakesLibrary();});
+  ovBody.querySelectorAll('[data-play]').forEach(btn=>btn.onclick=()=>runVaultAction(async()=>{const tid=btn.closest('.take').dataset.tid;const tk=all.find(x=>x.id===tid);if(tk){const a=new Audio(URL.createObjectURL(tk.blob));await a.play();}}));
+  ovBody.querySelectorAll('[data-del]').forEach(btn=>btn.onclick=()=>runVaultAction(async()=>{const tid=btn.closest('.take').dataset.tid;await delTake(tid);toast('Deleted');await openTakesLibrary();}));
 }
 
 /* ---------- drill tiles ---------- */
@@ -1236,7 +1246,7 @@ $$('#s-drill .tile').forEach(t=>t.onclick=()=>{
   if(m==='queue')openQueue();
   else if(m==='fade-pick')openFadePicker();
   else if(m==='ambush')openAmbush();
-  else if(m==='takes')openTakesLibrary();
+  else if(m==='takes')runVaultAction(openTakesLibrary);
 });
 function openFadePicker(){
   const html=`<div class="ov-title">Memorization Fade</div><p style="font-size:13px;color:var(--muted);margin-bottom:18px">Pick a script to drill from memory.</p>
@@ -1272,8 +1282,342 @@ function openForm(existing){
   if(existing){$('#fDel').onclick=()=>{scripts=scripts.filter(x=>x.id!==existing.id);save(LS.scripts,scripts);toast('Deleted');ov.classList.remove('show');show('browse');};}
 }
 
+/* ---------- VAULT backup format and recovery engine ---------- */
+const VaultBackup = (() => {
+  const FORMAT = 'allen-os-vault-backup', VERSION = 1;
+  const MAX_BYTES = 256 * 1024 * 1024;
+  const fail = message => { throw new Error(message); };
+  const object = x => x !== null && typeof x === 'object' && !Array.isArray(x);
+  const id = x => typeof x === 'string' && /^[A-Za-z0-9_-]{1,120}$/.test(x);
+  function safeJSON(x, depth = 0) {
+    if (depth > 40) fail('Backup contains data nested too deeply.');
+    if (x === null || typeof x === 'string' || typeof x === 'boolean') return;
+    if (typeof x === 'number' && Number.isFinite(x)) return;
+    if (!object(x) && !Array.isArray(x)) fail('Backup contains unsupported data.');
+    for (const key of Object.keys(x)) {
+      if (['__proto__', 'constructor', 'prototype'].includes(key)) fail('Backup contains an unsafe field.');
+      safeJSON(x[key], depth + 1);
+    }
+  }
+  function validateData(data) {
+    safeJSON(data);
+    if (!object(data) || !Array.isArray(data.scripts) || !Array.isArray(data.scores) ||
+        !object(data.streak) || !Array.isArray(data.takes)) fail('Backup is missing scripts, progress, or recordings.');
+    const scriptIds = new Set(), takeIds = new Set();
+    for (const s of data.scripts) {
+      if (!object(s) || !id(s.id) || scriptIds.has(s.id)) fail('Script IDs are invalid or duplicated.');
+      scriptIds.add(s.id);
+      for (const field of ['title', 'text', 'category', 'callStage']) {
+        if (typeof s[field] !== 'string') fail('A script is missing a text field.');
+      }
+      for (const field of ['tone', 'leadType', 'objection', 'whenToUse', 'principle', 'prompt']) {
+        if (s[field] !== undefined && typeof s[field] !== 'string') fail('A script field has the wrong type.');
+      }
+      if (s.mastery !== undefined && (!Number.isInteger(s.mastery) || s.mastery < 0 || s.mastery > 5)) fail('Mastery must be between 0 and 5.');
+      for (const field of ['needsPractice', 'worksWell']) {
+        if (s[field] !== undefined && typeof s[field] !== 'boolean') fail('A practice flag has the wrong type.');
+      }
+      if (s.lastPracticed != null && !validDay(s.lastPracticed)) fail('A practice date is invalid.');
+    }
+    if (!Number.isSafeInteger(data.streak.count) || data.streak.count < 0 ||
+        (data.streak.last != null && !validDay(data.streak.last))) fail('The practice streak is invalid.');
+    for (const t of data.takes) {
+      if (!object(t) || !id(t.id) || !id(t.scriptId) || takeIds.has(t.id)) fail('Recording IDs are invalid or duplicated.');
+      takeIds.add(t.id);
+      if (!Number.isSafeInteger(t.date) || t.date < 0 || t.date > 8640000000000000) fail('A recording date is invalid.');
+      if (typeof t.type !== 'string' || !/^audio\/[a-z0-9.+-]+(?:;[a-z0-9= .,+-]+)*$/i.test(t.type)) fail('A recording has an unsupported audio type.');
+      if (typeof t.audio !== 'string' || t.audio.length % 4 !== 0 ||
+          !/^[A-Za-z0-9+/]*={0,2}$/.test(t.audio)) fail('A recording contains invalid audio data.');
+      if (t.audio && btoa(atob(t.audio.slice(-4))) !== t.audio.slice(-4)) fail('A recording contains invalid audio data.');
+    }
+    return data;
+  }
+  function validDay(x) {
+    return typeof x === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(x) &&
+      Number.isFinite(Date.parse(x)) && new Date(x).toISOString().slice(0, 10) === x;
+  }
+  async function digest(value) {
+    if (!globalThis.crypto?.subtle) fail('Backup verification is unavailable in this browser. Try a current browser with secure-context support.');
+    const bytes = new TextEncoder().encode(JSON.stringify(value));
+    if (bytes.length > MAX_BYTES) fail('This backup exceeds the 256 MB limit. Nothing was changed.');
+    const hash = await crypto.subtle.digest('SHA-256', bytes);
+    return Array.from(new Uint8Array(hash), b => b.toString(16).padStart(2, '0')).join('');
+  }
+  async function encode(snapshot) {
+    const data = { scripts: snapshot.scripts, scores: snapshot.scores, streak: snapshot.streak, takes: [] };
+    let estimated = new TextEncoder().encode(JSON.stringify(data)).length;
+    for (const t of [...snapshot.takes].sort((a,b) => a.id.localeCompare(b.id))) {
+      if (!(t.blob instanceof Blob)) fail('A recording cannot be read. Backup was not completed.');
+      estimated += Math.ceil(t.blob.size / 3) * 4 + 300;
+      if (estimated > MAX_BYTES - 2048) fail('This backup exceeds the 256 MB limit. Your data has not been changed.');
+      const bytes = new Uint8Array(await t.blob.arrayBuffer());
+      let binary = '';
+      for (let i = 0; i < bytes.length; i += 32768) binary += String.fromCharCode(...bytes.subarray(i, i + 32768));
+      data.takes.push({ id: t.id, scriptId: t.scriptId, date: t.date, type: t.blob.type || 'audio/webm', audio: btoa(binary) });
+    }
+    validateData(data);
+    const result = { format: FORMAT, version: VERSION, createdAt: new Date().toISOString(), data, sha256: await digest(data) };
+    if (new TextEncoder().encode(JSON.stringify(result)).length > MAX_BYTES) fail('This backup exceeds the 256 MB limit.');
+    return result;
+  }
+  async function validate(envelope) {
+    if (!object(envelope) || envelope.format !== FORMAT) fail('Choose an ALLEN OS VAULT backup file.');
+    if (envelope.version !== VERSION) fail('This backup version is not supported. Nothing was changed.');
+    if (typeof envelope.createdAt !== 'string' || !Number.isFinite(Date.parse(envelope.createdAt))) fail('The backup date is invalid.');
+    validateData(envelope.data);
+    if (typeof envelope.sha256 !== 'string' || envelope.sha256 !== await digest(envelope.data)) fail('Backup verification failed. The file may be damaged or edited. Nothing was changed.');
+    return envelope;
+  }
+  async function parse(text) {
+    if (new TextEncoder().encode(text).length > MAX_BYTES) fail('Choose a backup smaller than 256 MB.');
+    let value;
+    try { value = JSON.parse(text); } catch { fail('This file is not valid JSON. Nothing was changed.'); }
+    return validate(value);
+  }
+  function decode(envelope) {
+    const data = envelope.data;
+    return { scripts: structuredClone(data.scripts), scores: structuredClone(data.scores), streak: structuredClone(data.streak),
+      takes: data.takes.map(t => ({ id: t.id, scriptId: t.scriptId, date: t.date,
+        blob: new Blob([Uint8Array.from(atob(t.audio), c => c.charCodeAt(0))], { type: t.type }) })) };
+  }
+  async function verifiedWrite(adapter, envelope) {
+    await adapter.write(decode(envelope));
+    const actual = await encode(await adapter.read());
+    if (actual.sha256 !== envelope.sha256) fail('Saved data did not match the backup.');
+  }
+  async function recover(adapter) {
+    const pending = await adapter.journalRead();
+    if (!pending) return false;
+    await validate(pending);
+    await verifiedWrite(adapter, pending);
+    await adapter.journalClear();
+    return true;
+  }
+  async function restore(adapter, incoming, expectedHash) {
+    await validate(incoming);
+    if (await adapter.journalRead()) fail('An earlier restore needs recovery. Reload this page before continuing.');
+    const before = await encode(await adapter.read());
+    if (before.sha256 !== expectedHash) fail('Your saved data changed after the preview. Reopen Backup and review it again.');
+    // Commit the previous state before touching either storage system. Keep it until readback succeeds.
+    await adapter.journalWrite(before);
+    try {
+      await verifiedWrite(adapter, incoming);
+      await adapter.journalClear();
+    } catch (cause) {
+      try {
+        await verifiedWrite(adapter, before);
+        await adapter.journalClear();
+      } catch {
+        const error = new Error('Restore stopped and automatic recovery could not finish. Keep this browser data and your recovery file. Reload this same page to retry recovery.');
+        error.recoveryRequired = true;
+        throw error;
+      }
+      fail('Restore failed. Your previous saved data was restored. Check available browser storage and try again.');
+    }
+  }
+  return { MAX_BYTES, encode, validate, parse, decode, digest, recover, restore };
+})();
+
+/* ---------- Browser storage adapter ---------- */
+let backupBusy = false, vaultRecoveryRequired = false;
+function openVaultDatabase(name, store) {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const timer = setTimeout(() => finish(new Error('Browser storage did not open. Close other VAULT tabs and retry.')), 8000);
+    function finish(error, database) {
+      if (settled) { if (database) database.close(); return; }
+      settled = true; clearTimeout(timer);
+      if (error) reject(error); else resolve(database);
+    }
+    const request = indexedDB.open(name, 1);
+    request.onupgradeneeded = () => { if (!request.result.objectStoreNames.contains(store)) request.result.createObjectStore(store, {keyPath:'id'}); };
+    request.onsuccess = () => finish(null, request.result);
+    request.onerror = () => finish(new Error('Browser storage is unavailable. No backup or restore was completed.'));
+    request.onblocked = () => finish(new Error('Close other VAULT tabs so browser storage can open.'));
+  });
+}
+async function vaultTransaction(name, store, mode, action) {
+  const database = await openVaultDatabase(name, store);
+  return new Promise((resolve, reject) => {
+    let result, tx;
+    try {
+      tx = database.transaction(store, mode);
+      tx.oncomplete = () => { database.close(); resolve(result); };
+      tx.onabort = () => { database.close(); reject(new Error('Browser storage could not finish saving. Check available space.')); };
+      tx.onerror = () => {};
+      action(tx.objectStore(store), value => { result = value; });
+    } catch (error) {
+      if (tx) { try { tx.abort(); } catch {} }
+      database.close(); reject(error);
+    }
+  });
+}
+function readStoredJSON(key, fallback) {
+  const value = localStorage.getItem(key);
+  return value === null ? fallback : JSON.parse(value);
+}
+const vaultStorage = {
+  async read() {
+    const takes = await vaultTransaction('vaultTakes', 'takes', 'readonly', (store, done) => {
+      const request = store.getAll(); request.onsuccess = () => done(request.result);
+    });
+    return { scripts: readStoredJSON(LS.scripts, scripts), scores: readStoredJSON(LS.scores, []),
+      streak: readStoredJSON(LS.streak, { last:null, count:0 }), takes };
+  },
+  async write(snapshot) {
+    localStorage.setItem(LS.scripts, JSON.stringify(snapshot.scripts));
+    localStorage.setItem(LS.scores, JSON.stringify(snapshot.scores));
+    localStorage.setItem(LS.streak, JSON.stringify(snapshot.streak));
+    await vaultTransaction('vaultTakes', 'takes', 'readwrite', store => {
+      store.clear(); for (const take of snapshot.takes) store.put(take);
+    });
+  },
+  journalRead() {
+    return vaultTransaction('allenVaultRecovery', 'recovery', 'readonly', (store, done) => {
+      const request = store.get('pending'); request.onsuccess = () => done(request.result?.backup || null);
+    });
+  },
+  journalWrite(backup) { return vaultTransaction('allenVaultRecovery', 'recovery', 'readwrite', store => store.put({id:'pending', backup})); },
+  journalClear() { return vaultTransaction('allenVaultRecovery', 'recovery', 'readwrite', store => store.delete('pending')); }
+};
+
+/* ---------- Backup / Restore interface ---------- */
+function backupStatus(message, isError = false) {
+  const node = $('#backupStatus');
+  if (node) { node.textContent = message; node.style.color = isError ? 'var(--red)' : 'var(--text2)'; }
+}
+function setBackupBusy(busy) {
+  backupBusy = busy;
+  $('#ovClose').disabled = busy;
+  $('#backupBtn').disabled = busy;
+  ovBody.querySelectorAll('button,input').forEach(node => { node.disabled = busy; });
+}
+async function withVaultLock(task) {
+  if (navigator.locks?.request) return navigator.locks.request('allen-vault-backup', {mode:'exclusive', ifAvailable:true}, lock => {
+    if (!lock) throw new Error('Another VAULT tab is backing up or restoring. Wait for it to finish.');
+    return task();
+  });
+  return task();
+}
+function downloadVaultBackup(envelope, recovery = false) {
+  const blob = new Blob([JSON.stringify(envelope)], {type:'application/json'});
+  const url = URL.createObjectURL(blob), link = document.createElement('a');
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  link.href = url; link.download = `ALLEN-OS-VAULT-${recovery ? 'before-restore-' : ''}${stamp}.json`;
+  document.body.appendChild(link); link.click(); link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
+function refreshVaultAfterRestore() {
+  scripts = readStoredJSON(LS.scripts, []); scores = readStoredJSON(LS.scores, []);
+  const screen = $('.screen.active')?.id.slice(2) || 'browse';
+  if (!scripts.some(s => s.category === activeCat)) activeCat = 'All';
+  show(screen); updateStats();
+  $('#app main').inert = false; $('nav.tabbar').inert = false; $('#addBtn').disabled = false; $('#objFab').disabled = false;
+  $('#storageWarning').hidden = true;
+}
+function backupCounts(envelope) {
+  const data = envelope.data, ids = new Set(data.scripts.map(s => s.id));
+  const orphaned = data.takes.filter(t => !ids.has(t.scriptId)).length;
+  return `${data.scripts.length} scripts · ${data.takes.length} recordings · ${data.streak.count} day streak` +
+    (orphaned ? ` (${orphaned} recordings linked to deleted scripts will be preserved)` : '');
+}
+async function openBackup() {
+  if (backupBusy) return;
+  if (mediaRecorder || recordingPending) { toast('Stop recording and wait for it to save before opening Backup.'); return; }
+  clearTimeout(paceTimer);
+  openOverlay('YOUR DATA', `<div class="ov-title">Backup &amp; restore</div>
+    <p class="backup-help">Save your scripts, progress, and audio recordings in one file. Keep the file private: it includes your recorded voice.</p>
+    <p class="backup-help">This reads saved data from this browser and this site address only. If the counts look wrong, cancel and return to the browser and address you normally use.</p>
+    <div id="backupSummary" class="lc-goal">Reading saved data…</div>
+    <button class="bigbtn solid" id="backupExport">Download backup</button>
+    <div class="field" style="margin-top:24px"><label for="backupFile">Choose a backup to restore</label>
+      <input type="file" id="backupFile" accept=".json,application/json"></div>
+    <p class="backup-help">Restore replaces this browser’s saved vault, including recordings and progress. It does not merge libraries. You will review the counts and save a recovery file first. Maximum backup file size: 256 MB.</p>
+    <div id="backupPreview"></div><p id="backupStatus" role="status" aria-live="polite" class="backup-help"></p>`);
+  let current = null, incoming = null, recoveryDownloaded = false;
+  function syncControls() {
+    $('#backupExport').disabled = !current || vaultRecoveryRequired;
+    $('#backupFile').disabled = !current || vaultRecoveryRequired;
+    const replace = $('#backupReplace');
+    if (replace) replace.disabled = !(incoming && recoveryDownloaded && $('#backupConfirm').checked) || vaultRecoveryRequired;
+  }
+  setBackupBusy(true);
+  try {
+    if (vaultRecoveryRequired) throw new Error('Recovery is pending. Reload this same page before using Backup or Restore.');
+    current = await withVaultLock(() => vaultStorage.read().then(VaultBackup.encode));
+    $('#backupSummary').textContent = 'Currently saved: ' + backupCounts(current);
+  } catch (error) { backupStatus(error.message || 'Saved data could not be read. Nothing was changed.', true); }
+  finally { setBackupBusy(false); syncControls(); }
+  $('#backupExport').onclick = () => {
+    if (!current) return;
+    try { downloadVaultBackup(current); backupStatus('Backup download requested. Check that the JSON file appears in your Downloads before closing this page.'); }
+    catch { backupStatus('The download could not start. Your data has not changed.', true); }
+  };
+  $('#backupFile').onchange = async event => {
+    const file = event.target.files[0]; incoming = null; recoveryDownloaded = false; $('#backupPreview').replaceChildren();
+    if (!file) return;
+    setBackupBusy(true); backupStatus('Checking the backup…');
+    try {
+      if (file.size > VaultBackup.MAX_BYTES) throw new Error('Choose a backup smaller than 256 MB.');
+      incoming = await VaultBackup.parse(await file.text());
+      $('#backupPreview').innerHTML = `<div class="lc-goal" id="backupIncoming"></div>
+        <button class="bigbtn" id="backupRecovery">Download current vault for recovery</button>
+        <label class="backup-confirm"><input type="checkbox" id="backupConfirm"> <span>I have checked that the recovery file is saved, closed other VAULT tabs, and want to replace this browser’s vault.</span></label>
+        <button class="bigbtn solid" id="backupReplace" disabled>Replace vault with this backup</button>`;
+      $('#backupIncoming').textContent = 'Backup selected: ' + backupCounts(incoming) + '\nCreated: ' + new Date(incoming.createdAt).toLocaleString();
+      $('#backupRecovery').onclick = () => {
+        try { downloadVaultBackup(current, true); recoveryDownloaded = true; backupStatus('Recovery download requested. Check the file in Downloads, then tick the confirmation.'); syncControls(); }
+        catch { backupStatus('Recovery download could not start. Restore remains unavailable.', true); }
+      };
+      $('#backupConfirm').onchange = syncControls;
+      $('#backupReplace').onclick = async () => {
+        if (!incoming || !recoveryDownloaded || !$('#backupConfirm').checked || backupBusy) return;
+        setBackupBusy(true); backupStatus('Restoring and verifying saved data. Keep this page open…');
+        try {
+          await withVaultLock(() => VaultBackup.restore(vaultStorage, incoming, current.sha256));
+          refreshVaultAfterRestore();
+          current = incoming;
+          incoming = null; $('#backupFile').value = ''; $('#backupPreview').replaceChildren();
+          $('#backupSummary').textContent = 'Currently saved: ' + backupCounts(current);
+          backupStatus('Restore complete. Scripts, progress, and recording data were saved and checked.');
+        } catch (error) {
+          if (error.recoveryRequired) { vaultRecoveryRequired = true; reportStorageError(error.message); }
+          else { refreshVaultAfterRestore(); }
+          incoming = null; $('#backupPreview').replaceChildren(); $('#backupFile').value = '';
+          backupStatus(error.message || 'Restore failed. Reload to check recovery before continuing.', true);
+        } finally { setBackupBusy(false); syncControls(); }
+      };
+      backupStatus('Backup checks passed. Review the counts before restoring.');
+    } catch (error) { incoming = null; backupStatus(error.message || 'Backup could not be read. Nothing was changed.', true); }
+    finally { setBackupBusy(false); syncControls(); }
+  };
+}
+function reportStorageError(message) {
+  const banner = $('#storageWarning');
+  banner.textContent = message || 'A change could not be saved. Use Backup to export the last saved data before reloading. Do not clear browser data.';
+  banner.hidden = false;
+  $('#app main').inert = true; $('nav.tabbar').inert = true; $('#addBtn').disabled = true; $('#objFab').disabled = true;
+  if (!backupBusy && !$('#backupStatus')) ovBody.querySelectorAll('button,input,select,textarea').forEach(node => { node.disabled = true; });
+}
+async function bootVault() {
+  $('#app main').inert = true; $('nav.tabbar').inert = true; $('#addBtn').disabled = true; $('#backupBtn').disabled = true; $('#objFab').disabled = true;
+  try {
+    const recovered = await withVaultLock(() => VaultBackup.recover(vaultStorage));
+    scripts = readStoredJSON(LS.scripts, null);
+    if (scripts === null) { scripts = SEED.map(s=>({worksWell:false,lastPracticed:null,needsPractice:true,mastery:0,...s})); save(LS.scripts,scripts); }
+    scores = readStoredJSON(LS.scores, []);
+    renderBrowse(); updateStats();
+    $('#app main').inert = false; $('nav.tabbar').inert = false; $('#addBtn').disabled = false; $('#backupBtn').disabled = false; $('#objFab').disabled = false;
+    if (recovered) { const banner = $('#storageWarning'); banner.textContent = 'An interrupted restore was recovered. Your previous saved vault has been restored.'; banner.hidden = false; }
+  } catch (error) {
+    vaultRecoveryRequired = true;
+    reportStorageError('VAULT could not safely open its saved data. ' + (error.message || '') + ' Keep this browser data and reload this same page to retry.');
+  }
+}
+
 /* ---------- boot ---------- */
-renderBrowse(); updateStats();
+$('#backupBtn').onclick=openBackup;
+bootVault();
 $('#objFab').onclick=openObjectionQuickPull;
 </script>
 </body>
