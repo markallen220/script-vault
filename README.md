@@ -47,4 +47,25 @@ Keep the current site address and storage keys stable. Identify the browser/addr
 - Inspect desktop and phone layouts, including the new header control and restore confirmation.
 - Locate and preserve the existing user's saved data. Do not assume the 14 starter scripts are the complete working library.
 
-Keep changes to the existing design and script content out of this milestone. Editing existing scripts remains a separate follow-up; this branch only adds backup/recovery and supporting persistence safeguards.
+## Five refinements (development branch)
+
+This branch builds on the unpublished backup/recovery branch. Preserve the existing starter scripts and visual system; no framework or service was added.
+
+- Browse includes lead-type call shortcuts and an early Start call action. These go directly to the first step; the existing Live Call action still opens tonality preparation.
+- Drill includes a session of up to three weakest/stalest scripts, explicit rep completion, self-ratings, improvement notes, completion feedback, and a review of the latest saved session. Closing midway preserves completed reps only.
+- Ratings now control both confidence flags. The streak uses local calendar dates and displays zero after a missed day. Previously stored UTC dates cannot be reconstructed and are retained as recorded; future practice uses local dates. Revealing an ambush answer no longer counts as practice.
+- Edit script preserves IDs, recordings, progress, and custom fields. The latest previous content can be previewed and restored. Up to ten content snapshots are retained per script and included in backups. Restoring a previous version makes the replaced content available as the next previous version. The UI currently exposes the most recent snapshot, not a full historical version picker.
+- Ratings are labeled buttons with 44px targets. Zoom is enabled, dialogs support Escape and Tab focus containment, and underlying controls are inert while a dialog is open. The floating objection control is hidden on Training. Recording blocks navigation until stopped and saved, including pending permission and saving states; reload/close requests trigger the browser's standard unsaved-work warning where supported.
+
+Practice sessions use the existing scores collection; revision snapshots are metadata on the existing script records. No storage keys or database versions changed. Backup JSON remains version 1.
+
+Run both suites:
+
+```sh
+node backup.test.cjs
+node refinements.test.cjs
+```
+
+Verified: 24 automated tests, browser call entry and objection return, three-rep session and reload persistence, edit and previous-version restoration across reload, keyboard rating and dialog focus containment, and 390px/1440px layout checks. Browser console showed no warnings/errors during those interactions.
+
+Still required before release: real microphone stop/save/navigation verification, audible playback in a normal browser (the earlier in-app player crashed), and a confirmed export of the user's actual working library. Test storage used synthetic or starter content, not the user's working vault. Keep this branch unmerged until those release checks and review are complete.

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover,maximum-scale=1.0,user-scalable=no"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
 <meta name="theme-color" content="#0B0D11"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
@@ -284,6 +284,16 @@ input[type=range]{width:100%;accent-color:var(--accent);}
 .backup-confirm input{width:20px;height:20px;flex:0 0 auto;margin-top:2px}
 #storageWarning{padding:14px 18px;background:var(--well);color:var(--amber);border-bottom:1px solid var(--amber);font-size:13px}
 button:disabled{cursor:not-allowed;opacity:.5}
+
+/* Incremental usability refinements */
+.mastery{flex-wrap:wrap}.mastery .mlabel{width:100%}
+button.dot,button.dot.big{width:44px;height:44px;color:var(--text);font:inherit}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.quickcalls{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 20px}.quickcalls button{min-height:44px}
+.card-start{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.card-start button{min-height:44px}
+#s-drill{padding-bottom:85px}main{padding-bottom:85px}.topbar{flex-wrap:wrap;gap:10px}
+.session-note{width:100%;min-height:70px}.session-feedback{line-height:1.6;color:var(--muted)}
+.rate-dots{flex-wrap:wrap}.ov-close{min-width:44px;min-height:44px}
 </style>
 </head>
 <body>
@@ -304,7 +314,7 @@ button:disabled{cursor:not-allowed;opacity:.5}
   <main>
     <!-- BROWSE -->
     <section class="screen active" id="s-browse">
-      <div class="chips" id="catChips"></div>
+      <div class="eyebrow">Start a call</div><div class="quickcalls" id="quickCalls"></div><div class="chips" id="catChips"></div>
       <div id="browseList"></div>
       <div class="foot"><div class="nm">Mark Allen</div><div class="meta">CA DRE# 01933129 · Founder &amp; Chief Operator</div></div>
     </section>
@@ -320,10 +330,10 @@ button:disabled{cursor:not-allowed;opacity:.5}
       <div class="section-label"><span class="eyebrow">Training</span><span class="line"></span></div>
       <div class="statrow">
         <div class="stat"><div class="n accent" id="stStreak">0</div><div class="l">Day Streak</div></div>
-        <div class="stat"><div class="n accent" id="stReps">0%</div><div class="l">Mastery</div></div>
+        <div class="stat"><div class="n accent" id="stReps">0%</div><div class="l">Self-rated mastery</div></div>
         <div class="stat"><div class="n" id="stWeak">0</div><div class="l">To Drill</div></div>
       </div>
-      <button class="tile" data-mode="queue">
+      <button class="tile" data-mode="session"><div class="ico">3</div><div><h4>Daily practice · 3 scripts</h4><p>Practice, rate your recall, and choose one improvement.</p></div><div class="arrow">›</div></button><div id="practiceSummary" class="session-feedback"></div><button class="tile" data-mode="queue">
         <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
         <div><h4>Smart Drill Queue</h4><p>Today's list — your weakest and stalest scripts first.</p></div>
         <div class="arrow">›</div>
@@ -371,8 +381,8 @@ button:disabled{cursor:not-allowed;opacity:.5}
 </div>
 
 <!-- OVERLAY -->
-<div class="overlay" id="overlay">
-  <div class="ov-head"><span class="eyebrow" id="ovKicker">DRILL</span><button class="ov-close" id="ovClose">×</button></div>
+<div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-labelledby="ovKicker">
+  <div class="ov-head"><span class="eyebrow" id="ovKicker">DRILL</span><button class="ov-close" id="ovClose" aria-label="Close dialog">×</button></div>
   <div class="ov-body" id="ovBody"></div>
 </div>
 
@@ -779,19 +789,20 @@ function styleScriptText(t){
 
 /* ---------- mastery scoring helpers (#5) ---------- */
 function masteryDotsHTML(s){
-  const m=s.mastery||0; let d='<span class="mlabel">MASTERY</span>';
-  for(let i=1;i<=5;i++) d+=`<span class="dot ${i<=m?'on':''}" data-n="${i}"></span>`;
+  const m=s.mastery||0; let d='<span class="mlabel">SELF-RATED MASTERY</span>';
+  for(let i=1;i<=5;i++) d+=`<button type="button" class="dot ${i<=m?'on':''}" data-n="${i}" aria-label="Rate mastery ${i} of 5" aria-pressed="${i===m}">${i}</button>`;
   return d;
 }
 function setMastery(s,n){ s.mastery=n; s.needsPractice=n<4; s.worksWell=n>=4; save(LS.scripts,scripts); updateStats(); }
 function renderRateDots(sel,s,cb){
   const el=$(sel); if(!el)return; const m=s.mastery||0; let h='';
-  for(let i=1;i<=5;i++) h+=`<span class="dot big ${i<=m?'on':''}" data-n="${i}"></span>`;
+  for(let i=1;i<=5;i++) h+=`<button type="button" class="dot big ${i<=m?'on':''}" data-n="${i}" aria-label="Rate mastery ${i} of 5" aria-pressed="${i===m}">${i}</button>`;
   el.innerHTML=h;
-  el.querySelectorAll('.dot').forEach(d=>d.onclick=()=>{const n=+d.dataset.n;el.querySelectorAll('.dot').forEach(x=>x.classList.toggle('on',+x.dataset.n<=n));cb&&cb(n);});
+  el.querySelectorAll('.dot').forEach(d=>d.onclick=()=>{const n=+d.dataset.n;el.querySelectorAll('.dot').forEach(x=>{x.classList.toggle('on',+x.dataset.n<=n);x.setAttribute('aria-pressed',+x.dataset.n===n);});cb&&cb(n);});
 }
 /* ---------- objection quick-pull (#2) ---------- */
 function openObjectionQuickPull(){
+  if(!recordingNavigationAllowed())return;
   const handlers=scripts.filter(s=>s.category==='Objection Handler');
   if(!handlers.length){openOverlay('OBJECTION','<div class="empty">No objection handlers yet.</div>');return;}
   function list(){
@@ -817,12 +828,14 @@ function openObjectionQuickPull(){
 
 /* ---------- card rendering ---------- */
 function cardHTML(s){
+  const needsPractice=(s.mastery||0)<4;
   const badges=[`<span class="badge ${badgeClass(s.category)}">${esc(s.category)}</span>`];
   if(s.tone) badges.push(`<span class="badge b-tone">${esc(s.tone)}</span>`);
   if(s.leadType) badges.push(`<span class="badge b-lead">${esc(s.leadType)}</span>`);
   if(s.objection) badges.push(`<span class="badge b-obj">${esc(s.objection)}</span>`);
   return `<div class="card" data-id="${s.id}">
     <div class="top"><h3>${esc(s.title)}</h3></div>
+    <div class="card-start">${(s.category==='Call Flow'||s.category==='Appointment Close')?'<button class="act primary" data-do="start">Start call</button>':''}<button class="act" data-do="edit">Edit script</button></div>
     <div class="badges">${badges.join('')}</div>
     <div class="mastery" data-id="${s.id}">${masteryDotsHTML(s)}</div>
     ${s.whenToUse?`<div class="whenuse">${esc(s.whenToUse)}</div>`:''}
@@ -832,7 +845,7 @@ function cardHTML(s){
       <button class="act primary" data-do="copy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="1"/><path d="M5 15V5a1 1 0 0 1 1-1h10"/></svg>Copy</button>
       <button class="act rec" data-do="rec"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5" fill="currentColor" stroke="none"/></svg>Record</button>
       <button class="act" data-do="takes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M5 12l4-4M5 12l4 4"/></svg>Takes <span class="tc"></span></button>
-      <button class="act ${s.needsPractice?'':'on'}" data-do="practice"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>${s.needsPractice?'Needs work':'Works well'}</button>
+      <button class="act ${needsPractice?'':'on'}" data-do="practice"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>${needsPractice?'Needs work':'Works well'}</button>
       <button class="act" data-do="memorize"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h10M4 18h6"/></svg>Memorize</button>
       <button class="act" data-do="pace"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 4l13 8-13 8z" fill="currentColor" stroke="none"/></svg>Pace</button>
       ${(s.category==='Call Flow'||s.category==='Appointment Close')?`<button class="act live" data-do="live"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.81.36 1.6.7 2.34a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.74-1.74a2 2 0 0 1 2.11-.45c.74.34 1.53.57 2.34.7A2 2 0 0 1 22 16.92z"/></svg>Live Call</button>`:''}
@@ -843,18 +856,16 @@ function cardHTML(s){
 
 function attachCard(card){
   const id=card.dataset.id; const s=scripts.find(x=>x.id===id);
+  card.querySelector('[data-do="edit"]').onclick=()=>openForm(s);
+  const start=card.querySelector('[data-do="start"]');if(start)start.onclick=()=>openLiveCall(s,true);
   card.querySelector('[data-do="copy"]').onclick=()=>copyText(s.text);
   card.querySelector('[data-do="rec"]').onclick=(e)=>toggleRecord(s,e.currentTarget,card);
   card.querySelector('[data-do="takes"]').onclick=()=>runVaultAction(()=>toggleTakes(s,card));
   card.querySelector('[data-do="memorize"]').onclick=()=>openFade(s);
   card.querySelector('[data-do="pace"]').onclick=()=>openPacer(s);
   {const lb=card.querySelector('[data-do="live"]'); if(lb)lb.onclick=()=>openLiveCall(s);}
-  card.querySelector('[data-do="practice"]').onclick=(e)=>{
-    s.worksWell=!s.worksWell?true:false; s.needsPractice=!s.worksWell; save(LS.scripts,scripts);
-    const b=e.currentTarget; b.classList.toggle('on',!s.needsPractice); b.lastChild.textContent=s.needsPractice?'Needs work':'Works well';
-    toast(s.needsPractice?'Marked: needs work':'Marked: works well'); updateStats();
-  };
-  card.querySelectorAll('.mastery .dot').forEach(d=>d.onclick=()=>{const n=+d.dataset.n;setMastery(s,n);card.querySelectorAll('.mastery .dot').forEach(x=>x.classList.toggle('on',+x.dataset.n<=n));toast('Mastery '+n+'/5');});
+  card.querySelector('[data-do="practice"]').onclick=()=>{openOverlay('SELF-RATING','<div class="ov-title">'+esc(s.title)+'</div><p>1–3: needs work · 4–5: confident. This is your assessment, not a completed practice rep.</p><div id="statusRate" class="rate-dots"></div>');renderRateDots('#statusRate',s,n=>{setMastery(s,n);closeOverlay();refreshViews();});};
+  card.querySelectorAll('.mastery .dot').forEach(d=>d.onclick=()=>{const rating=+d.dataset.n;setMastery(s,rating);refreshViews();const current=[...document.querySelectorAll('.screen.active .card')].find(c=>c.dataset.id===s.id);current?.querySelector('[data-n="'+rating+'"]').focus();});
   refreshTakeCount(s,card);
 }
 async function refreshTakeCount(s,card){return runVaultAction(async()=>{const t=await getTakes(s.id);const el=card.querySelector('.tc');if(el)el.textContent=t.length?`(${t.length})`:'';});}
@@ -898,18 +909,19 @@ async function toggleRecord(s,btn,card){
 
 /* ---------- practice tracking + streak ---------- */
 function markPracticed(s){
-  const today=new Date().toISOString().slice(0,10);
+  const today=localDay();
   s.lastPracticed=today; save(LS.scripts,scripts);
   const st=load(LS.streak,{last:null,count:0});
   if(st.last!==today){
-    const y=new Date(Date.now()-864e5).toISOString().slice(0,10);
+    const d=new Date();d.setDate(d.getDate()-1);const y=localDay(d);
     st.count=(st.last===y)?st.count+1:1; st.last=today; save(LS.streak,st);
   }
   updateStats();
 }
 function updateStats(){
   const st=load(LS.streak,{count:0});
-  $('#stStreak').textContent=st.count||0;
+  $('#stStreak').textContent=currentStreak(st);
+  renderPracticeSummary();
   const n=scripts.length; const sum=scripts.reduce((a,s)=>a+(s.mastery||0),0);
   $('#stReps').textContent=(n?Math.round((sum/(n*5))*100):0)+'%';
   $('#stWeak').textContent=scripts.filter(s=>(s.mastery||0)<4).length;
@@ -918,6 +930,8 @@ function updateStats(){
 /* ---------- screen renders ---------- */
 let activeCat='All';
 function renderBrowse(){
+  $('#quickCalls').innerHTML=scripts.filter(s=>s.category==='Call Flow').map(s=>'<button class="chip" data-call="'+esc(s.id)+'">'+esc(s.leadType||s.title)+'</button>').join('');
+  $('#quickCalls').querySelectorAll('[data-call]').forEach(b=>b.onclick=()=>openLiveCall(scripts.find(s=>s.id===b.dataset.call),true));
   const chips=$('#catChips');
   const cats=['All',...CATEGORIES.filter(c=>scripts.some(s=>s.category===c))];
   chips.innerHTML=cats.map(c=>`<button class="chip ${c===activeCat?'on':''}" data-cat="${esc(c)}">${esc(c)}</button>`).join('');
@@ -953,6 +967,8 @@ function renderSearch(q){
 
 /* ---------- navigation ---------- */
 function show(screen){
+  if(!recordingNavigationAllowed())return;
+  $('#objFab').style.display=screen==='drill'?'none':'';
   $$('.screen').forEach(s=>s.classList.remove('active'));
   $('#s-'+screen).classList.add('active');
   $$('.tab').forEach(t=>t.classList.toggle('on',t.dataset.screen===screen));
@@ -968,11 +984,19 @@ $('#searchInput').addEventListener('input',e=>renderSearch(e.target.value));
 
 /* ---------- overlay framework ---------- */
 const ov=$('#overlay'),ovBody=$('#ovBody'),ovKicker=$('#ovKicker');
-function openOverlay(kicker,html){ovKicker.textContent=kicker;ovBody.innerHTML=html;ov.classList.add('show');ovBody.scrollTop=0;}
-$('#ovClose').onclick=()=>{if(backupBusy)return;ov.classList.remove('show');ovBody.innerHTML='';clearTimeout(paceTimer);};
+let overlayReturnFocus=null;
+function recordingNavigationAllowed(){if(recordingPending||mediaRecorder){toast('Stop recording and wait for it to save before leaving this screen.');return false;}return true;}
+document.addEventListener('click',e=>{if(!recordingPending&&!mediaRecorder)return;const button=e.target.closest('button');if(button&&(button.matches('[data-do="rec"],#fadeRec,#ambRec')))return;e.preventDefault();e.stopImmediatePropagation();toast('Stop recording and wait for it to save before leaving this screen.');},true);
+window.addEventListener('beforeunload',e=>{if(recordingPending||mediaRecorder){e.preventDefault();e.returnValue='';}});
+function openOverlay(kicker,html){if(!ov.classList.contains('show'))overlayReturnFocus=document.activeElement;ovKicker.textContent=kicker;ovBody.innerHTML=html;ov.classList.add('show');ovBody.scrollTop=0;document.querySelector('#app')?.setAttribute('inert','');$('#objFab').setAttribute('inert','');$('#ovClose').focus();}
+function closeOverlay(){if(backupBusy||!recordingNavigationAllowed())return;ov.classList.remove('show');ovBody.innerHTML='';clearTimeout(paceTimer);document.querySelector('#app')?.removeAttribute('inert');$('#objFab').removeAttribute('inert');if(overlayReturnFocus?.isConnected)overlayReturnFocus.focus();}
+$('#ovClose').onclick=closeOverlay;
+document.addEventListener('keydown',e=>{if(!ov.classList.contains('show'))return;if(e.key==='Escape'){e.preventDefault();closeOverlay();}if(e.key==='Tab'){const items=[...ov.querySelectorAll('button,input,select,textarea,[tabindex="0"]')].filter(x=>!x.disabled&&x.getClientRects().length);const first=items[0],last=items.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus();}}});
+new MutationObserver(()=>{if(!ov.classList.contains('show')){document.querySelector('#app')?.removeAttribute('inert');$('#objFab').removeAttribute('inert');}}).observe(ov,{attributes:true,attributeFilter:['class']});
 
 /* ---------- Memorization Fade ---------- */
 function openFade(s){
+  if(!recordingNavigationAllowed())return;
   const words=s.text.split(/(\s+)/);
   const html=`<div class="ov-title">${esc(s.title)}</div>
     <div class="slider-wrap"><label>Hide level — <span id="fadePct">0%</span></label><input type="range" id="fadeSlider" min="0" max="100" value="0"/></div>
@@ -1001,7 +1025,7 @@ function openFade(s){
     // reuse recorder via a hidden flow
     fadeRecord(s,this);
   };
-  renderRateDots('#fadeRate',s,(n)=>{setMastery(s,n);markPracticed(s);toast('Logged — mastery '+n+'/5');setTimeout(()=>ov.classList.remove('show'),350);});
+  renderRateDots('#fadeRate',s,(n)=>{setMastery(s,n);markPracticed(s);toast('Logged — mastery '+n+'/5');setTimeout(()=>closeOverlay(),350);});
 }
 async function fadeRecord(s,btn){
   if(recordingPending){if(mediaRecorder?.state==='recording')mediaRecorder.stop();return;}
@@ -1019,6 +1043,7 @@ async function fadeRecord(s,btn){
 
 /* ---------- Pacing / Teleprompter (#1) ---------- */
 function openPacer(s){
+  if(!recordingNavigationAllowed())return;
   clearTimeout(paceTimer);
   const SPEEDS={slow:1.7,med:2.4,fast:3.2};
   let wps=SPEEDS.med, playing=true, i=0;
@@ -1101,7 +1126,8 @@ function parseSteps(text){
   });
   return {intro:intro.join('\n').trim(), steps};
 }
-function openLiveCall(s){
+function openLiveCall(s,skipPreparation=false){
+  if(!recordingNavigationAllowed())return;
   clearTimeout(paceTimer);
   const parsed=parseSteps(s.text);
   let steps=parsed.steps;
@@ -1179,11 +1205,12 @@ function openLiveCall(s){
     $('#lcAgain').onclick=()=>{ idx=0; step(); };
     if(closer){ $('#lcCloser').onclick=()=>openLiveCall(closer); }
   }
-  precall();
+  if(skipPreparation)step();else precall();
 }
 
 /* ---------- Smart Drill Queue ---------- */
 function openQueue(){
+  if(!recordingNavigationAllowed())return;
   const ranked=[...scripts].sort((a,b)=>{
     const am=(a.mastery||0), bm=(b.mastery||0);
     if(am!==bm)return am-bm;
@@ -1199,6 +1226,7 @@ function openQueue(){
 
 /* ---------- Objection Ambush ---------- */
 function openAmbush(){
+  if(!recordingNavigationAllowed())return;
   const handlers=scripts.filter(s=>s.category==='Objection Handler');
   if(!handlers.length){openOverlay('AMBUSH','<div class="empty">Add objection handlers first.</div>');return;}
   function round(){
@@ -1215,9 +1243,9 @@ function openAmbush(){
         <button class="bigbtn ghost" id="ambNext">Next objection ↻</button>
       </div>`;
     openOverlay('AMBUSH',html);
-    $('#ambReveal').onclick=()=>{$('#ambReveal2').classList.add('show');$('#ambReveal').style.display='none';markPracticed(s);renderRateDots('#ambRate',s,(n)=>{setMastery(s,n);toast('Mastery '+n+'/5');});};
+    $('#ambReveal').onclick=()=>{$('#ambReveal2').classList.add('show');$('#ambReveal').style.display='none';renderRateDots('#ambRate',s,(n)=>{setMastery(s,n);markPracticed(s);toast('Self-rating '+n+'/5');});};
     $('#ambRec').onclick=function(){fadeRecord(s,this);};
-    document.addEventListener('click',function nx(e){if(e.target&&e.target.id==='ambNext'){document.removeEventListener('click',nx);round();}});
+    $('#ambNext').onclick=()=>{if(recordingNavigationAllowed())round();};
   }
   round();
 }
@@ -1243,23 +1271,68 @@ async function openTakesLibrary(){
 /* ---------- drill tiles ---------- */
 $$('#s-drill .tile').forEach(t=>t.onclick=()=>{
   const m=t.dataset.mode;
-  if(m==='queue')openQueue();
+  if(m==='session')openDailySession();
+  else if(m==='queue')openQueue();
   else if(m==='fade-pick')openFadePicker();
   else if(m==='ambush')openAmbush();
   else if(m==='takes')runVaultAction(openTakesLibrary);
 });
 function openFadePicker(){
+  if(!recordingNavigationAllowed())return;
   const html=`<div class="ov-title">Memorization Fade</div><p style="font-size:13px;color:var(--muted);margin-bottom:18px">Pick a script to drill from memory.</p>
     ${scripts.map(s=>`<button class="tile" data-fid="${s.id}"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h10M4 18h6"/></svg></div><div><h4>${esc(s.title)}</h4><p>${esc(s.category)}</p></div><div class="arrow">›</div></button>`).join('')}`;
   openOverlay('MEMORIZE',html);
   ovBody.querySelectorAll('[data-fid]').forEach(b=>b.onclick=()=>{const s=scripts.find(x=>x.id===b.dataset.fid);openFade(s);});
 }
 
+/* ---------- bounded practice and reversible editing ---------- */
+function localDay(d=new Date()){return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');}
+function currentStreak(st,now=new Date()){const yesterday=new Date(now);yesterday.setDate(yesterday.getDate()-1);return st.last===localDay(now)||st.last===localDay(yesterday)?st.count||0:0;}
+function refreshViews(){renderBrowse();renderFlow();renderObj();renderSearch($('#searchInput').value);updateStats();}
+function practiceHistory(){return scores.filter(x=>x&&x.kind==='practice-session'&&Array.isArray(x.attempts)&&x.attempts.every(a=>a&&Number.isInteger(a.rating)&&a.rating>=1&&a.rating<=5));}
+function renderPracticeSummary(){
+  const el=$('#practiceSummary');if(!el)return;const last=practiceHistory().at(-1);
+  el.innerHTML=last?'<p>Last session: '+esc(last.day)+' · '+last.attempts.length+' completed reps. '+esc(last.attempts.filter(a=>a.rating<4).length+' to revisit.')+'</p><details><summary>Review last session</summary>'+last.attempts.map(a=>'<p><b>'+esc(a.title||'Script')+'</b> · '+a.rating+'/5<br>'+esc(a.note||'No improvement note added.')+'</p>').join('')+'</details>':'<p>No completed daily sessions yet. Self-ratings measure confidence, not sales results.</p>';
+}
+function rankPractice(items){return [...items].sort((a,b)=>(a.mastery||0)-(b.mastery||0)||(a.lastPracticed||'').localeCompare(b.lastPracticed||''));}
+function openDailySession(){
+  if(!recordingNavigationAllowed())return;
+  const queue=rankPractice(scripts).slice(0,3);const sessionId=crypto.randomUUID();let pos=0,attempts=[];
+  if(!queue.length){openOverlay('PRACTICE','<p>Add a script to begin.</p>');return;}
+  function render(){
+    const s=queue[pos];let rating=0;
+    openOverlay('DAILY PRACTICE',`<div class="ov-title">${pos+1} of ${queue.length} · ${esc(s.title)}</div><p>Say it aloud from memory, then compare. Rate your recall: 1–3 needs work; 4–5 confident.</p><button class="bigbtn" id="sessionReveal">Reveal script</button><div id="sessionText" hidden class="scripttext">${styleScriptText(s.text)}</div><div class="rate-dots" id="sessionRate"></div><label for="sessionNote">One thing to improve (optional)</label><textarea class="session-note" id="sessionNote" maxlength="500"></textarea><button class="bigbtn solid" id="sessionNext" disabled>Complete rep${pos<queue.length-1?' and continue':''}</button><p class="session-feedback">Only completed reps are saved. You can stop between reps.</p>`);
+    $('#sessionReveal').onclick=()=>{$('#sessionText').hidden=false;$('#sessionReveal').hidden=true;};
+    renderRateDots('#sessionRate',{mastery:0},n=>{rating=n;$('#sessionNext').disabled=false;});
+    $('#sessionNext').onclick=()=>{
+      const attempt={scriptId:s.id,title:s.title,rating,note:$('#sessionNote').value.trim(),at:new Date().toISOString()};
+      const entry={kind:'practice-session',id:sessionId,day:localDay(),attempts:[...attempts,attempt]};
+      // Persist each completed rep immediately; a closed session never fabricates uncompleted attempts.
+      const next=[...scores.filter(x=>x?.id!==sessionId),entry];save(LS.scores,next);scores=next;setMastery(s,rating);markPracticed(s);attempts.push(attempt);pos++;
+      if(pos<queue.length){render();return;}
+      const weak=attempts.filter(a=>a.rating<4);
+      openOverlay('SESSION COMPLETE',`<div class="ov-title">${attempts.length} reps completed</div><p>${weak.length?'Revisit these scripts next: '+weak.map(a=>esc(a.title)).join(', '):'You rated all three confidently. Try recalling them again in your next session.'}</p>${attempts.map(a=>'<div class="principle"><b>'+esc(a.title)+'</b> · '+a.rating+'/5'+(a.note?'<p>'+esc(a.note)+'</p>':'')+'</div>').join('')}<button class="bigbtn solid" id="sessionDone">Back to training</button>`);
+      $('#sessionDone').onclick=()=>{closeOverlay();show('drill');};
+    };
+  }render();
+}
+const editableScriptFields=['title','category','callStage','tone','leadType','objection','prompt','whenToUse','principle','text'];
+function scriptContent(s){return Object.fromEntries(editableScriptFields.map(k=>[k,s[k]||'']));}
+function saveScriptRevision(s,data){const previous={savedAt:new Date().toISOString(),content:scriptContent(s)};s.revisions=[...(Array.isArray(s.revisions)?s.revisions:[]),previous].slice(-10);Object.assign(s,data);}
+function reviewRevision(s){
+  const previous=s.revisions.at(-1);
+  if(!previous?.content||typeof previous.content.text!=='string'){toast('This previous version cannot be read. Export a backup before continuing.');return;}
+  openOverlay('PREVIOUS VERSION',`<div class="ov-title">${esc(previous.content.title)}</div><p>Saved ${esc(previous.savedAt)}. Restoring content preserves ratings and recordings. Your current content becomes the previous version.</p><div class="scripttext">${styleScriptText(previous.content.text)}</div><button class="bigbtn solid" id="confirmRevision">Restore this version</button><button class="bigbtn ghost" id="cancelRevision">Back to editing</button>`);
+  $('#cancelRevision').onclick=()=>openForm(s);
+  $('#confirmRevision').onclick=()=>{saveScriptRevision(s,scriptContent(previous.content));save(LS.scripts,scripts);refreshViews();openForm(s);toast('Previous content restored');};
+}
+
 /* ---------- add / edit script ---------- */
 $('#addBtn').onclick=()=>openForm(null);
 function openForm(existing){
+  if(!recordingNavigationAllowed())return;
   const s=existing||{title:'',category:'Call Flow',callStage:'Opening',leadType:'',objection:'',tone:'Calm',whenToUse:'',principle:'',text:''};
-  const opt=(arr,val)=>arr.map(o=>`<option ${o===val?'selected':''}>${esc(o)}</option>`).join('');
+  const opt=(arr,val)=>(val&&!arr.includes(val)?[val,...arr]:arr).map(o=>`<option ${o===val?'selected':''}>${esc(o)}</option>`).join('');
   const html=`<div class="ov-title">${existing?'Edit script':'Add a script'}</div>
     <div class="field"><label>Title</label><input id="fTitle" value="${esc(s.title)}" placeholder="e.g. Circle Prospecting Opener"/></div>
     <div class="field"><label>Category</label><select id="fCat">${opt(CATEGORIES,s.category)}</select></div>
@@ -1267,19 +1340,24 @@ function openForm(existing){
     <div class="field"><label>Tone</label><select id="fTone">${opt(['Calm','Curious','Direct','Warm','Confident'],s.tone)}</select></div>
     <div class="field"><label>Lead type (optional)</label><input id="fLead" value="${esc(s.leadType)}" placeholder="Expired, FSBO, Circle…"/></div>
     <div class="field"><label>Objection prompt (for objection handlers)</label><input id="fObj" value="${esc(s.objection)}" placeholder="e.g. Not interested"/></div>
+    <div class="field"><label>Quick-pull wording (optional)</label><input id="fPrompt" value="${esc(s.prompt||'')}" placeholder="What the seller says"/></div>
     <div class="field"><label>When to use</label><input id="fWhen" value="${esc(s.whenToUse)}" placeholder="When do you reach for this?"/></div>
     <div class="field"><label>Script</label><textarea id="fText" placeholder="The actual words…">${esc(s.text)}</textarea></div>
     <div class="field"><label>Why it works (optional)</label><input id="fWhy" value="${esc(s.principle)}"/></div>
     <button class="bigbtn solid" id="fSave">${existing?'Save changes':'Add to vault'}</button>
-    ${existing?'<button class="bigbtn ghost" id="fDel" style="margin-top:10px;color:var(--red);border-color:rgba(239,68,68,.4)">Delete script</button>':''}`;
+    ${existing?.revisions?.length?'<button class="bigbtn ghost" id="fRevert" style="margin-top:10px">Review previous version</button>':''}`;
   openOverlay(existing?'EDIT':'ADD',html);
   $('#fSave').onclick=()=>{
     const data={title:$('#fTitle').value.trim()||'Untitled',category:$('#fCat').value,callStage:$('#fStage').value,tone:$('#fTone').value,leadType:$('#fLead').value.trim(),objection:$('#fObj').value.trim(),whenToUse:$('#fWhen').value.trim(),principle:$('#fWhy').value.trim(),text:$('#fText').value.trim()};
-    if(existing){Object.assign(existing,data);}
+    data.prompt=$('#fPrompt').value.trim();
+    if(!data.text){toast('Add script text before saving.');return;}
+    if(existing){saveScriptRevision(existing,data);}
     else{scripts.push({id:'u_'+Date.now(),needsPractice:true,worksWell:false,lastPracticed:null,mastery:0,...data});}
     save(LS.scripts,scripts);toast(existing?'Saved':'Added to vault');ov.classList.remove('show');show('browse');
   };
-  if(existing){$('#fDel').onclick=()=>{scripts=scripts.filter(x=>x.id!==existing.id);save(LS.scripts,scripts);toast('Deleted');ov.classList.remove('show');show('browse');};}
+  if(existing?.revisions?.length)$('#fRevert').onclick=()=>reviewRevision(existing);
+  ovBody.querySelectorAll('.field').forEach(field=>{const control=field.querySelector('input,select,textarea');if(control)field.querySelector('label').htmlFor=control.id;});
+
 }
 
 /* ---------- VAULT backup format and recovery engine ---------- */
